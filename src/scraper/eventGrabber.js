@@ -4,8 +4,9 @@ const { DateTime, Settings } = require("luxon");
 const http = require('http'); // or 'https' for https:// URLs
 const fs = require('fs');
 const ical = require('node-ical');
-const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents} = require('./sqliteHelper');
+const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
+const {loginToCG} = require('../scraper/puppeteerLogin');
 Settings.defaultZone = "America/New_York";
 
 // Initalize dotenv environent
@@ -17,17 +18,16 @@ const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[
 const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
 const caseEventTags = /(<([^>]+)>)/ig;
 const descriptionCleaner = /. . . . /gm
+let failed = false;
 
-const job = schedule.scheduleJob('*/30 * * * *', async function(){
-    console.log('Refreshing event DB, pruning messages, and posting new events!');
-    await getEventData();
-    await messagePruner();
-    await postnewTrackers();
+const job = schedule.scheduleJob('*/30 * * * *', () => {
+    failed = false;
+    updateInfo();
 });
 
 const autoTagger = {
     "Food (Predicted)": {
-        "keywords" : ["food","lunch","luncheon","bbq","ice cream", "dessert", "lunch", "breakfast", "muffins"],
+        "keywords" : ["food","lunch","luncheon","bbq","ice cream", "dessert", "lunch", "breakfast", "muffins", "delicious", "shawarma", "ice cream", "bbq", "barbeque"],
         "original" : "Food"
     }
 }
@@ -36,7 +36,14 @@ let events_storage = {};
 
 //postnewTrackers();
 //messagePruner();
-//getEventData(true);
+getEventData(false);
+
+async function updateInfo() {
+    console.log('Refreshing event DB, pruning messages, and posting new events!');
+    await getEventData();
+    await messagePruner();
+    await postnewTrackers();
+}
 
 async function getEventData(force = false) {
 
@@ -123,6 +130,9 @@ async function getEventDataRQ(force = false) {
         if(temp_data["eventLocation"].includes("sign in to display")) {
             cancelUpdate = true;
             break;
+        } else {
+            // Failed
+            failed = false;
         }
 
         if(!events_storage.hasOwnProperty(temp_data["eventId"])) {
@@ -159,7 +169,7 @@ async function getEventDataRQ(force = false) {
         for(const [key, arr] of Object.entries(autoTagger)) {
             if(!parsedEvents.includes(arr["original"])) {
                 for(const value in arr["keywords"]) {
-                    if(events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase().includes(value)) {
+                    if(events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase().includes(value) || events_storage[temp_data["eventId"]]["eventName"].toLowerCase().includes(value)) {
                         parsedEvents.push(key);
                         break;
                     }
@@ -176,9 +186,18 @@ async function getEventDataRQ(force = false) {
       if(!cancelUpdate) {
         updateDB(force);
       } else {
-        client.users.fetch('141382611518881792', false).then((user) => {
-            user.send('Please re-login to CG to update tokens');
-        });
+        if(!failed){
+            failed = true;
+            client.users.fetch('141382611518881792', false).then((user) => {
+                user.send('Attempting to refresh via logging into CG!');
+            });
+    
+            loginToCG((success) => {
+                if(success) {
+                    updateInfo();
+                } 
+            });
+        }
       }
     }) .catch(function (error) { 
         console.log(error);
@@ -245,8 +264,7 @@ async function messagePruner() {
 function postnewTrackers() {
     getAllTrackers((rows) => {
         for(let i=0; i<rows.length; i++) {
-            let channel = this.client.channels.cache.get(rows[i]["channelID"]);
-            if(channel != null) {
+            this.client.channels.fetch(rows[i]["channelID"]).then(channel => {
                 retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"],(result => {
                     for(let ii=0; ii<result.length; ii++) {
                         channel.send(embedBuilder(result[ii])).then(msg => {
@@ -254,9 +272,10 @@ function postnewTrackers() {
                         })
                     }
                 }))
-            } else {
-                // Delete tracker if channel is poof???
-            }
+            }).catch(e => {
+                deleteTracker(rows[i]['id']);
+            })
+            
         }
     })
 }

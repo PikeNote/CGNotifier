@@ -1,5 +1,5 @@
 const {SlashCommandBuilder,ChannelType, PermissionsBitField} = require('discord.js');
-const {insertTracker} = require('../../../scraper/sqliteHelper');
+const {insertTracker, clubsList} = require('../../../scraper/sqliteHelper');
 
 module.exports = {
 	data: new SlashCommandBuilder()

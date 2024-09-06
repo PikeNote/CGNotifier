@@ -40,7 +40,9 @@ module.exports = {
 			case 'tracker_id':
 				choices = activeTrackerIDs;
 				for(let i=0; i<choices.length; i++) {
-					choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],interaction.client.channels.cache.get(choices[i]["channelID"])?.name)
+					interaction.client.channels.fetch(choices[i]["channelID"]).then(channel => {
+						choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
+					});
 				}
 				filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
 				break;
@@ -62,6 +64,13 @@ module.exports = {
 			const clubName = interaction.options.getString("club_name");
 			const eventTag = interaction.options.getString("tags");
 			const days = interaction.options.getInteger("number_of_days")
+
+			let choices = activeTrackerIDs.filter(choice => choice.id==data.$id);
+
+			if(choices[0]['guildID'] != interaction.guild.id) {
+				interaction.reply({content: "You don't have permission to update trackers not in your server!", ephemeral: true});
+				return;
+			}
 
 			if(channelPost) {
 				updatedFields.push(`channelID=$channelID`)

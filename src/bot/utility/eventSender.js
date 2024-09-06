@@ -68,24 +68,30 @@ function embedBuilder(queryResults) {
 
     let button = new ButtonBuilder()
         .setLabel('Add to Calendar 🗓️')
-        .setURL(encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,150) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`))
+        .setURL(encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,100) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`))
         .setStyle(ButtonStyle.Link);
 
-    const row = new ActionRowBuilder().addComponents(button);
+    let notification = new ButtonBuilder()
+        .setCustomId('notif')
+        .setLabel('🔔Notify Me (30 minutes)')
+        .setStyle(ButtonStyle.Primary);
+        
+    const row = new ActionRowBuilder().addComponents(button, notification);
 
     return { embeds: [embed], components: [row]}
 
 }
 
 function updateMessage(queryResults, channelID, messageID) {
-    const channel = this.client.channels.cache.get(channelID);
-    if(channel != null) {
+    const channel = this.client.channels.fetch(channelID).then((channel) => {
         channel.messages.fetch(messageID).then(message => {
             message.edit(embedBuilder(queryResults));
         }).catch(err => {
             console.error(err);
         });
-    }
+    }).catch(e => {
+        
+    })
 }
 
 module.exports = {updateMessage, embedBuilder}

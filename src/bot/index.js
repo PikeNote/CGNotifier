@@ -2,8 +2,8 @@ const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 
-require('dotenv').config()
 
+require('dotenv').config()
 require('./deploy-commands.js');
 
 let setClient;
@@ -78,6 +78,9 @@ client.on(Events.InteractionCreate, async interaction => {
 		} catch (error) {
 			console.error(error);
 		}
+	}
+	if (interaction.isButton()) {
+		
 	}
 });
 

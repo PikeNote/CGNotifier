@@ -17,6 +17,8 @@
     "node-ical": "^0.18.0",
     "node-schedule": "^2.1.1",
     "node-url-shortener": "^2.0.3",
-    "sqlite3": "^5.1.7"
+    "puppeteer": "^23.3.0",
+    "sqlite3": "^5.1.7",
+    "totp-generator": "^1.0.0"
   }
 }

@@ -68,6 +68,14 @@ const serverSettings = `
         tagFilter TEXT NOT NULL
     )`;
 
+const userNotificationTable = `
+    CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userID TEXT NOT NULL,
+        eventID TEXT NOT NULL
+    )
+`
+
 db.run(initSQLTable, (err) => {
     if (err) {
         return console.error('Error creating table:', err.message);
@@ -88,6 +96,14 @@ db.run(serverSettings, (err) => {
     }
     console.log('Server settings table created successfully');
 });
+
+db.run(userNotificationTable, (err) => {
+    if (err) {
+        return console.error('Error creating table:', err.message);
+    }
+    console.log('User notifications table created successfully');
+});
+
 
 /*
     let event_data = {
@@ -217,6 +233,10 @@ function removeMessage(msgID) {
     db.run(`DELETE FROM messages WHERE messageID = ?`, msgID);
 }
 
+function deleteTracker(trackerID) {
+    db.run(`DELETE FROM trackers WHERE id=?`, trackerID);
+}
+
 function getAllTrackers(callback) {
     return db.all(`SELECT * FROM trackers`, (err, rows) => {
         callback(rows);
@@ -230,6 +250,12 @@ function getGuildTrackers(guild, callback) {
 }
 
 function getEvent(id, callback) {
+    return db.all(`SELECT * FROM events WHERE eventId = ?`, id, (err, rows) => {
+        callback(rows);
+    });
+}
+
+function getEventMessage(id, callback) {
     return db.all(`SELECT * FROM events WHERE eventId = ?`, id, (err, rows) => {
         callback(rows);
     });
@@ -259,7 +285,7 @@ function getUniqueClubs() {
 
 
 
-module.exports = { dbUpdate, runQuery, retrieveEvent, insertUpdateMessage, getOldMessages, removeMessage, getAllTrackers, retrieveTagEvents, insertTracker, getGuildTrackers, activeTrackerIDs, clubsList, updateTracker, getEvent }
+module.exports = { dbUpdate, runQuery, retrieveEvent, insertUpdateMessage, getOldMessages, removeMessage, getAllTrackers, retrieveTagEvents, insertTracker, getGuildTrackers, activeTrackerIDs, clubsList, updateTracker, getEvent, deleteTracker }
 
 // TBI
 
