@@ -1,9 +1,9 @@
 const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
-const {DateTime} = require('luxon');
+const {DateTime, Settings} = require('luxon');
 
 function embedBuilder(queryResults) {
-    let startString = DateTime.fromISO(queryResults["start_time"]).toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-	let endString = DateTime.fromISO(queryResults["end_time"]).toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
     if(DateTime.fromISO(queryResults["start_time"]) < Date.now()) {
         queryResults["eventName"] = "(🔴 LIVE) " + queryResults["eventName"];
@@ -31,7 +31,7 @@ function embedBuilder(queryResults) {
         },
         {
             name: "Price",
-            value: queryResults["eventPriceRange"],
+            value: queryResults["eventPriceRange"] != '' ? queryResults["eventPriceRange"] : 'FREE',
             inline: true
         },
         {
@@ -68,7 +68,7 @@ function embedBuilder(queryResults) {
 
     let button = new ButtonBuilder()
         .setLabel('Add to Calendar 🗓️')
-        .setURL(encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,100) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`))
+        .setURL(encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,100) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`))
         .setStyle(ButtonStyle.Link);
 
     let notification = new ButtonBuilder()

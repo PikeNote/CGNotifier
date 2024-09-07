@@ -181,7 +181,7 @@ function runQuery(query,params) {
 }
 
 async function retrieveEvent(tags, clubName, callback) {
-    db.all(`SELECT * from events WHERE end_time > date('now') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) ORDER BY start_time`,
+    db.all(`SELECT * from events WHERE end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) ORDER BY start_time`,
         {
             $tag:tags,
             $cname:clubName
@@ -193,7 +193,7 @@ async function retrieveEvent(tags, clubName, callback) {
 async function retrieveTagEvents(tags, clubName, days, channelID, callback) {
     let dateToLookFor = DateTime.now().plus({ days: days}).toISO();
 
-    db.all(`SELECT * from events t1 WHERE NOT exists (SELECT 1 FROM messages t2 WHERE t1.eventId = t2.eventId AND $channelID = t2.channelID) AND end_time > date('now') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) AND $days > end_time ORDER BY start_time`,
+    db.all(`SELECT * from events t1 WHERE NOT exists (SELECT 1 FROM messages t2 WHERE t1.eventId = t2.eventId AND $channelID = t2.channelID) AND end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) AND $days > end_time ORDER BY start_time`,
         {
             $tag:tags,
             $cname:clubName,
@@ -224,7 +224,7 @@ function updateTracker(query, data) {
 }
 
 function getOldMessages(callback) {
-    return db.all(`SELECT * FROM  messages WHERE expiryDate < strftime('%Y-%m-%dT%H:%M:%S', 'now');`, (err, rows) => {
+    return db.all(`SELECT * FROM  messages WHERE expiryDate < strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`, (err, rows) => {
         callback(rows);
     });
 }

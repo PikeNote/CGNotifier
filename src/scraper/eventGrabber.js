@@ -7,7 +7,6 @@ const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
 const {loginToCG} = require('../scraper/puppeteerLogin');
-Settings.defaultZone = "America/New_York";
 
 // Initalize dotenv environent
 require('dotenv').config()
@@ -36,7 +35,9 @@ let events_storage = {};
 
 //postnewTrackers();
 //messagePruner();
-getEventData(false);
+//getEventData(false);
+
+updateInfo();
 
 async function updateInfo() {
     console.log('Refreshing event DB, pruning messages, and posting new events!');
@@ -49,46 +50,50 @@ async function getEventData(force = false) {
 
     events_storage = {};
 
-    const events = await ical.fromURL("https://community.case.edu/ical/cwru/ical_cwru.ics");
-    for (const event of Object.values(events)) {
+    try {
+        const events = await ical.fromURL("https://community.case.edu/ical/cwru/ical_cwru.ics");
+        for (const event of Object.values(events)) {
 
-        
-        if(!event.url) {
-            continue;
+            
+            if(!event.url) {
+                continue;
+            }
+            
+            const caseURLMatch = [...(event.url).matchAll(caseURLRegex)];
+
+            // Set the event ID for future storage
+            if(!caseURLMatch.length > 0)
+                continue;
+            
+            // Skip events that literally don't exist;
+            if(event.end < new Date()) {
+                continue;
+            }
+
+            let event_data = {
+                "start_time":event.start.toISOString(),
+                "end_time":event.end.toISOString(),
+                "eventName":event.summary.val,
+                "eventDesc":event.description.replace(descriptionCleaner, '\n\n'),
+                "eventAttendees":0,
+                "eventUrl":event.url,
+                "eventLocation":event.location,
+                "eventPicture":"",
+                "eventPriceRange":"FREE",
+                "clubName":event.organizer.params.CN,
+                "clubURL":event.organizer.val,
+                "eventId":caseURLMatch[0][1],
+                "eventCategory":JSON.stringify(event.categories)
+            }
+
+            events_storage[event_data.eventId] = event_data;
         }
-        
-        const caseURLMatch = [...(event.url).matchAll(caseURLRegex)];
 
-        // Set the event ID for future storage
-        if(!caseURLMatch.length > 0)
-            continue;
-        
-        // Skip events that literally don't exist;
-        if(event.end < new Date()) {
-            continue;
-        }
 
-        let event_data = {
-            "start_time":event.start.toISOString(),
-            "end_time":event.end.toISOString(),
-            "eventName":event.summary.val,
-            "eventDesc":event.description.replace(descriptionCleaner, '\n\n'),
-            "eventAttendees":0,
-            "eventUrl":event.url,
-            "eventLocation":event.location,
-            "eventPicture":"",
-            "eventPriceRange":"FREE",
-            "clubName":event.organizer.params.CN,
-            "clubURL":event.organizer.val,
-            "eventId":caseURLMatch[0][1],
-            "eventCategory":JSON.stringify(event.categories)
-        }
-
-        events_storage[event_data.eventId] = event_data;
+        await getEventDataRQ(force);
+    } catch (e) {
+       console.log("iCal Fetching Failed") 
     }
-
-
-    await getEventDataRQ(force);
 }
 
 async function getEventDataRQ(force = false) {

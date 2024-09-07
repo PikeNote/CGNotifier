@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, ChannelType} = require('discord.js');
+const {SlashCommandBuilder, PermissionsBitField} = require('discord.js');
 const {activeTrackerIDs, clubsList, updateTracker, deleteTracker, getGuildTrackers} = require('../../../scraper/sqliteHelper')
 
 module.exports = {
@@ -17,16 +17,13 @@ module.exports = {
 		let filtered;
 		switch(focusedOption.name) {
 			case 'tracker_id':
-                interaction.client.channels.fetch(choices[i]["channelID"]).then((channel) => {
-                    choices = activeTrackerIDs;
-                    for(let i=0; i<choices.length; i++) {
-                        choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
-                    }
-                    filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
-                });
-				break;
-			case 'club_name':
-				filtered = clubsList.filter(club => club.startsWith(focusedOption.value)).slice(0,24).map(choice => ({ name: choice, value: choice }));
+				choices = activeTrackerIDs;
+				for(let i=0; i<choices.length; i++) {
+					interaction.client.channels.fetch(choices[i]["channelID"]).then(channel => {
+						choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
+					});
+				}
+				filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
 				break;
 		}
 
