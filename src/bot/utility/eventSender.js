@@ -1,13 +1,15 @@
 const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
 const {DateTime, Settings} = require('luxon');
 
-function embedBuilder(queryResults) {
+function embedBuilder(queryResults, getLive = false) {
     let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
+    let liveStatus = false;
     if(DateTime.fromISO(queryResults["start_time"]) < Date.now()) {
         queryResults["eventName"] = "(🔴 LIVE) " + queryResults["eventName"];
         color = "#D2042D"
+        liveStatus = true;
     }
     
     let embed = new EmbedBuilder()
@@ -78,14 +80,25 @@ function embedBuilder(queryResults) {
         
     const row = new ActionRowBuilder().addComponents(button, notification);
 
-    return { embeds: [embed], components: [row]}
+    if(getLive) {
+        return { embeds: [embed], components: [row], live:liveStatus}
+    }
+    return { embeds: [embed], components: [row] }
 
 }
 
 function updateMessage(queryResults, channelID, messageID) {
-    const channel = this.client.channels.fetch(channelID).then((channel) => {
+    this.client.channels.fetch(channelID).then((channel) => {
         channel.messages.fetch(messageID).then(message => {
-            message.edit(embedBuilder(queryResults));
+            let embed = embedBuilder(queryResults,true);
+            let live = embed['live'];
+            delete embed['live'];
+            if(live) {
+                message.delete();
+                channel.send(embed);
+            } else {
+                message.edit(embed);
+            }
         }).catch(err => {
             console.error(err);
         });
