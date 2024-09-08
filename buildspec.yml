@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo Installing pnpm
+      - curl -fsSL https://get.pnpm.io/install.sh | sh -
+      - echo pnpm installed!
+  pre_build:
+    commands:
+      - echo Installing nodemon
+      - pnpm -g nodemon
+  build:
+    commands:
+      - echo Install project dependencies
+      - cd pnpm install
+  post_build:
+    commands:
+      - nodemon ./src/bot/index.js
