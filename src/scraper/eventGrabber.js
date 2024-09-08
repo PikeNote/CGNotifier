@@ -285,12 +285,13 @@ async function processNotifications() {
     for(let i=0; i<notifs.length; i++) {
         let event = await getEvent(notifs[i]["eventID"]);
         let user = await this.client.user.fetch(notifs[i]['userId']);
-
+        
         if(user != null && event.length != 0) {
             event = event[0];
+            let dmChannel = await user.createDM();
             user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`)
             deleteUserNotification(notifs[i]['messageId']);
-            let oldNotif = await user.dmChannel.fetch(notifs[i]['messageId']);
+            let oldNotif = await dmChannel.fetch(notifs[i]['messageId']);
             oldNotif.delete();
         }
         
