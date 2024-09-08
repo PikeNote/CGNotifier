@@ -280,7 +280,7 @@ async function postnewTrackers() {
 }
 
 async function processNotifications() {
-    let notifs = getPastDueNotifications();
+    let notifs = await getPastDueNotifications();
 
     for(let i=0; i<notifs.length; i++) {
         let event = await getEvent(notifs[i]["eventID"]);

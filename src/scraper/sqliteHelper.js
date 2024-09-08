@@ -251,7 +251,7 @@ function deleteUserNotification(messageID) {
 }
 
 function getPastDueNotifications() {
-    return db.all(`SELECT * FROM notifications WHERE notifyTime < strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`);
+    return db.all(`SELECT * FROM notifications WHERE notifyTime <= strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`);
 }
 
 async function setupTrackerIDs() {
