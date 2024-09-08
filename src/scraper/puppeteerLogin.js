@@ -8,7 +8,7 @@ async function loginToCG(callback) {
     console.log("Logging into CampusGroups")
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         devtools: false,
         args: ['--no-sandbox', '--incognito']
     });
@@ -16,6 +16,8 @@ async function loginToCG(callback) {
 
     // Navigate the page to a URL.
     await page.goto('https://www.campusgroups.com/shibboleth/login?idp=cwru', {timeout: 0});
+
+    await page.setCacheEnabled(false);
 
     await page.waitForNavigation({
         waitUntil: 'networkidle0',
@@ -60,10 +62,10 @@ function setEnvValue(key, value) {
     // if key-value pair exists in the .env file,
     if (target !== -1) {
       // replace the key/value with the new value
-      ENV_VARS.splice(target, 1, `${key}=${value}`);
+      ENV_VARS.splice(target, 1, `${key}='${value}'`);
     } else {
       // if it doesn't exist, add it instead
-      ENV_VARS.push(`${key}=${value}`);
+      ENV_VARS.push(`${key}='${value}'`);
     }
   
     // write everything back to the file system

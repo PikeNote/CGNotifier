@@ -1,5 +1,5 @@
 const {SlashCommandBuilder, PermissionsBitField} = require('discord.js');
-const {activeTrackerIDs, clubsList, updateTracker, deleteTracker, getGuildTrackers} = require('../../../scraper/sqliteHelper')
+const {getTrackerIDs, deleteTracker} = require('../../../scraper/sqliteHelper')
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -17,7 +17,7 @@ module.exports = {
 		let filtered;
 		switch(focusedOption.name) {
 			case 'tracker_id':
-				choices = activeTrackerIDs;
+				choices = getTrackerIDs();
 				for(let i=0; i<choices.length; i++) {
 					interaction.client.channels.fetch(choices[i]["channelID"]).then(channel => {
 						choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
@@ -36,7 +36,7 @@ module.exports = {
 		if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			let id = interaction.options.getInteger("tracker_id");
 
-            let choices = activeTrackerIDs.filter(choice => choice.id==id);
+            let choices = getTrackerIDs().filter(choice => choice.id==id);
             if(choices[0]['guildID'] != interaction.guild.id) {
                 interaction.reply({content: "You don't have permission to delete a tracker in another guild!", ephemeral: true})
             }

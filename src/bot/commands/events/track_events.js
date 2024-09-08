@@ -1,5 +1,5 @@
 const {SlashCommandBuilder,ChannelType, PermissionsBitField} = require('discord.js');
-const {insertTracker, clubsList} = require('../../../scraper/sqliteHelper');
+const {insertTracker, getClubList} = require('../../../scraper/sqliteHelper');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -32,7 +32,7 @@ module.exports = {
 
 		switch(focusedOption.name) {
 			case 'club_name':
-				filtered = clubsList.filter(club => club.startsWith(focusedOption.value)).slice(0,24).map(choice => ({ name: choice, value: choice }));
+				filtered = getClubList().filter(club => club.toLowerCase().startsWith(focusedOption.value.toLowerCase())).slice(0,24).map(choice => ({ name: choice, value: choice }));
 				break;
 		}
 

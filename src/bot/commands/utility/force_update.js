@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require('discord.js');
-const {getEventData} = require('../../../scraper/eventGrabber')
+const {updateInfo} = require('../../../scraper/eventGrabber')
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -14,7 +14,7 @@ module.exports = {
             await interaction.reply({content: "You don't have the permissions to force an update!", ephemeral: true});
         } else {
             await interaction.reply({content:'Forcing updates...', ephemeral: true});
-            getEventData(force);
+            updateInfo(force);
         }
 		
 	},

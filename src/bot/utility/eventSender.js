@@ -72,7 +72,7 @@ function embedBuilder(queryResults) {
         .setStyle(ButtonStyle.Link);
 
     let notification = new ButtonBuilder()
-        .setCustomId('notif')
+        .setCustomId('notifCreate')
         .setLabel('🔔Notify Me (30 minutes)')
         .setStyle(ButtonStyle.Primary);
         

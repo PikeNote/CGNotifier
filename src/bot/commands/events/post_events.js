@@ -43,18 +43,18 @@ module.exports = {
 
 			interaction.reply({content: "Sending events...", ephemeral: true})
 			
-			retrieveEvent(eventTag, clubName, (async function(queryResults) {
-				if(numberOfEvents>queryResults.length)
-					numberOfEvents = queryResults.length;
+			let queryResults = await retrieveEvent(eventTag, clubName)
+			if(numberOfEvents>queryResults.length)
+				numberOfEvents = queryResults.length;
 
-				for(let i=0; i<numberOfEvents; i++) {
-					channelPost.send(embedBuilder(queryResults[i]))
-					.then(msg => {
-						insertUpdateMessage(msg.id, msg.channelId, queryResults[i]["eventId"], JSON.stringify(queryResults[i]), queryResults[i]["end_time"]);
-					})
-					await wait(1);
-				}
-			}));
+			for(let i=0; i<numberOfEvents; i++) {
+				channelPost.send(embedBuilder(queryResults[i]))
+				.then(msg => {
+					insertUpdateMessage(msg.id, msg.channelId, queryResults[i]["eventId"], JSON.stringify(queryResults[i]), queryResults[i]["end_time"]);
+				})
+				await wait(1);
+			}
+			
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}

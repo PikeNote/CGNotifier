@@ -1,6 +1,7 @@
-const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, Events, GatewayIntentBits, Collection, Partials } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const {buttonClicked} = require('../bot/utility/buttonHandling.js');
 
 
 require('dotenv').config()
@@ -12,7 +13,12 @@ let setClient;
 
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [
+	GatewayIntentBits.Guilds,
+	GatewayIntentBits.GuildMessages,
+	GatewayIntentBits.MessageContent,
+	GatewayIntentBits.GuildMembers,
+], partials: [Partials.Message, Partials.Channel] });
 
 this.client = client;
 
@@ -51,7 +57,7 @@ client.on(Events.InteractionCreate, async interaction => {
 		console.error(`No command matching ${interaction.commandName} was found.`);
 		return;
 	}
-    console.log("receieved!")
+
 	try {
 		await command.execute(interaction);
 	} catch (error) {
@@ -80,7 +86,7 @@ client.on(Events.InteractionCreate, async interaction => {
 		}
 	}
 	if (interaction.isButton()) {
-		
+		buttonClicked(interaction);
 	}
 });
 

@@ -4,7 +4,7 @@ const { DateTime, Settings } = require("luxon");
 const http = require('http'); // or 'https' for https:// URLs
 const fs = require('fs');
 const ical = require('node-ical');
-const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, deleteTracker} = require('./sqliteHelper');
+const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
 const {loginToCG} = require('../scraper/puppeteerLogin');
 
@@ -15,13 +15,16 @@ require('dotenv').config()
 const regexMultiDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm;
 const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+) – ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm
 const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
-const caseEventTags = /(<([^>]+)>)/ig;
 const descriptionCleaner = /. . . . /gm
 let failed = false;
 
 const job = schedule.scheduleJob('*/30 * * * *', () => {
     failed = false;
     updateInfo();
+});
+
+const notificationCheck = schedule.scheduleJob('* * * * *', () => {
+    processNotifications();
 });
 
 const autoTagger = {
@@ -37,13 +40,13 @@ let events_storage = {};
 //messagePruner();
 //getEventData(false);
 
-updateInfo();
+//updateInfo();
 
-async function updateInfo() {
+async function updateInfo(force = false) {
     console.log('Refreshing event DB, pruning messages, and posting new events!');
-    await getEventData();
-    await messagePruner();
-    await postnewTrackers();
+    await getEventData(force);
+    messagePruner();
+    postnewTrackers();
 }
 
 async function getEventData(force = false) {
@@ -245,44 +248,53 @@ function setClient(c) {
 
 // Prune old messages
 async function messagePruner() {
-    getOldMessages((rows) => {
-        for(let i=0; i<rows.length; i++) {
-            const channel = this.client.channels.cache.get(rows[i]["channelID"])
+    let rows = getOldMessages();
+    for(let i=0; i<rows.length; i++) {
+        const channel = this.client.channels.cache.get(rows[i]["channelID"])
 
-            channel.messages.fetch(rows[i]["messageID"]).then(message => {
-                message.delete();
-                removeMessage(rows[i]["messageID"]);
-            }).catch(removeMessage(rows[i]["messageID"]))
-        }
-    })
+        channel.messages.fetch(rows[i]["messageID"]).then(message => {
+            message.delete();
+            removeMessage(rows[i]["messageID"]);
+        }).catch( error => {
+            console.log(error) 
+            removeMessage(rows[i]["messageID"])
+        })
+    }
 }
 
-/*
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        guildID TEXT NO NULL,
-        channelID TEXT NOT NULL,
-        clubFilter TEXT NOT NULL,
-        daysPost TEXT NOT NULL,
-        tagFilter TEXT NOT NULL
-*/
-
-function postnewTrackers() {
-    getAllTrackers((rows) => {
-        for(let i=0; i<rows.length; i++) {
-            this.client.channels.fetch(rows[i]["channelID"]).then(channel => {
-                retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"],(result => {
-                    for(let ii=0; ii<result.length; ii++) {
-                        channel.send(embedBuilder(result[ii])).then(msg => {
-                            insertUpdateMessage(msg.id, msg.channelId, result[ii]["eventId"], JSON.stringify(result[ii]), result[ii]["end_time"]);
-                        })
-                    }
-                }))
-            }).catch(e => {
-                deleteTracker(rows[i]['id']);
-            })
+async function postnewTrackers() {
+    let rows = await getAllTrackers();
+    for(let i=0; i<rows.length; i++) {
+        this.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
+            let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
+            for(let ii=0; ii<result.length; ii++) {
+                channel.send(embedBuilder(result[ii])).then(msg => {
+                    insertUpdateMessage(msg.id, msg.channelId, result[ii]["eventId"], JSON.stringify(result[ii]), result[ii]["end_time"]);
+                })
+            }
             
-        }
-    })
+        }).catch(e => {
+            console.warn(e);
+        })   
+    }
 }
 
-module.exports = {setClient, getEventData};
+async function processNotifications() {
+    let notifs = getPastDueNotifications();
+
+    for(let i=0; i<notifs.length; i++) {
+        let event = await getEvent(notifs[i]["eventID"]);
+        let user = await this.client.user.fetch(notifs[i]['userId']);
+
+        if(user != null && event.length != 0) {
+            event = event[0];
+            user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`)
+            deleteUserNotification(notifs[i]['messageId']);
+            let oldNotif = await user.dmChannel.fetch(notifs[i]['messageId']);
+            oldNotif.delete();
+        }
+        
+    }
+}
+
+module.exports = {setClient, updateInfo};

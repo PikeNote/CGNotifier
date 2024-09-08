@@ -32,6 +32,9 @@ importers:
       puppeteer:
         specifier: ^23.3.0
         version: 23.3.0
+      sqlite:
+        specifier: ^5.1.1
+        version: 5.1.1
       sqlite3:
         specifier: ^5.1.7
         version: 5.1.7
@@ -977,6 +980,9 @@ packages:
 
   sqlite3@5.1.7:
     resolution: {integrity: sha512-GGIyOiFaG+TUra3JIfkI/zGP8yZYLPQ0pl1bH+ODjiX57sPhrLU5sQJn1y9bDKZUFYkX1crlrPfSYt0BKKdkog==}
+
+  sqlite@5.1.1:
+    resolution: {integrity: sha512-oBkezXa2hnkfuJwUo44Hl9hS3er+YFtueifoajrgidvqsJRQFpc5fKoAkAor1O5ZnLoa28GBScfHXs8j0K358Q==}
 
   sshpk@1.18.0:
     resolution: {integrity: sha512-2p2KJZTSqQ/I3+HX42EpYOa2l3f8Erv8MWKsy2I9uf4wA7yFIkXRffYdsx86y6z4vHtV8u7g+pPlr8/4ouAxsQ==}
@@ -2263,6 +2269,8 @@ snapshots:
     transitivePeerDependencies:
       - bluebird
       - supports-color
+
+  sqlite@5.1.1: {}
 
   sshpk@1.18.0:
     dependencies:

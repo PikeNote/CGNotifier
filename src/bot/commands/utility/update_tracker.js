@@ -1,5 +1,5 @@
-const {SlashCommandBuilder, ChannelType} = require('discord.js');
-const {activeTrackerIDs, clubsList, updateTracker} = require('../../../scraper/sqliteHelper')
+const {SlashCommandBuilder, ChannelType, PermissionsBitField} = require('discord.js');
+const {getTrackerIDs, getClubList, updateTracker} = require('../../../scraper/sqliteHelper')
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -38,7 +38,7 @@ module.exports = {
 
 		switch(focusedOption.name) {
 			case 'tracker_id':
-				choices = activeTrackerIDs;
+				choices = getTrackerIDs();
 				for(let i=0; i<choices.length; i++) {
 					interaction.client.channels.fetch(choices[i]["channelID"]).then(channel => {
 						choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
@@ -47,7 +47,7 @@ module.exports = {
 				filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
 				break;
 			case 'club_name':
-				filtered = clubsList.filter(club => club.startsWith(focusedOption.value)).slice(0,24).map(choice => ({ name: choice, value: choice }));
+				filtered = getClubList().filter(club => club.startsWith(focusedOption.value)).slice(0,24).map(choice => ({ name: choice, value: choice }));
 				break;
 		}
 
@@ -65,7 +65,7 @@ module.exports = {
 			const eventTag = interaction.options.getString("tags");
 			const days = interaction.options.getInteger("number_of_days")
 
-			let choices = activeTrackerIDs.filter(choice => choice.id==data.$id);
+			let choices = getTrackerIDs().filter(choice => choice.id==data.$id);
 
 			if(choices[0]['guildID'] != interaction.guild.id) {
 				interaction.reply({content: "You don't have permission to update trackers not in your server!", ephemeral: true});

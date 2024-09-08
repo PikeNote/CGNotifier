@@ -1,16 +1,11 @@
 const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
 const {DateTime} = require('luxon');
 const {updateMessage} = require('../bot/utility/eventSender')
 let activeTrackerIDs = [];
 let clubsList = [];
 
-const db = new sqlite3.Database('./events.db', (err) => {
-    if (err) {
-        console.error(err.message);
-    } else {
-        console.log('Events database connected owo');
-    }
-});
+let db;
 
 /*
 Example Data:
@@ -72,38 +67,40 @@ const userNotificationTable = `
     CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         userID TEXT NOT NULL,
-        eventID TEXT NOT NULL
+        eventID TEXT NOT NULL,
+        notifyTime TEXT NOT NULL,
+        messageId TEXT NOT NULL
     )
 `
 
-db.run(initSQLTable, (err) => {
-    if (err) {
-        return console.error('Error creating table:', err.message);
-    }
-    console.log('Event table created successfully');
-});
+async function loadDatabase() {
+    db = await open({
+        filename: './events.db',
+        driver: sqlite3.Database
+    });
+    
+    await db.exec(initSQLTable).then(() => {
+        console.log('Event table created successfully');
+    }).catch( err => {console.error('Error creating table:', err.message)});
 
-db.run(initMessageTable, (err) => {
-    if (err) {
-        return console.error('Error creating table:', err.message);
-    }
-    console.log('Messages table created successfully');
-});
+    await db.exec(initMessageTable).then(() => {
+        console.log('Messages table created successfully');
+    }).catch( err => {console.error('Error creating table:', err.message)});
 
-db.run(serverSettings, (err) => {
-    if (err) {
-        return console.error('Error creating table:', err.message);
-    }
-    console.log('Server settings table created successfully');
-});
+    await db.exec(serverSettings).then(() => {
+        console.log('Server settings table created successfully');
+    }).catch( err => {console.error('Error creating table:', err.message)});
 
-db.run(userNotificationTable, (err) => {
-    if (err) {
-        return console.error('Error creating table:', err.message);
-    }
-    console.log('User notifications table created successfully');
-});
+    await db.exec(userNotificationTable).then(() => {
+        console.log('User notifications table created successfully');
+    }).catch( err => {console.error('Error creating table:', err.message)});
 
+    // Setup all known trackers
+    setupTrackerIDs();
+    getUniqueClubs();
+}
+
+loadDatabase();
 
 /*
     let event_data = {
@@ -124,48 +121,42 @@ db.run(userNotificationTable, (err) => {
 */
 
 
-function dbUpdate(data, force = false) {
+async function dbUpdate(data, force = false) {
     let copyData = Object.create(data);
     data = addPrefix(data);
     if(!data.$start_time) {
         return;
     }
-    db.all(`SELECT * FROM events WHERE eventId = ?`, data.$eventId, (error, rows) => {
-        if(rows.length > 0) {
-            let query = `SELECT * FROM events WHERE start_time = $start_time AND end_time = $end_time AND eventName = $eventName AND eventDesc = $eventDesc AND eventAttendees = $eventAttendees AND eventUrl=$eventUrl AND eventLocation=$eventLocation AND eventPicture = $eventPicture AND eventPriceRange = $eventPriceRange AND clubName = $clubName AND clubURL = $clubURL AND eventCategory = $eventCategory AND eventId=$eventId`
-            db.all(query, data, function (error, rows) {
-                if (error) {
-                    console.log(error);
-                }
-                if(rows.length == 0 || force) {
-                    let update = `UPDATE events SET start_time = $start_time, end_time = $end_time, eventName = $eventName, eventDesc = $eventDesc, eventAttendees = $eventAttendees, eventUrl=$eventUrl, eventLocation=$eventLocation, eventPicture = $eventPicture, eventPriceRange = $eventPriceRange, clubName = $clubName, clubURL = $clubURL, eventCategory = $eventCategory WHERE eventId=$eventId`
-                    db.run(update, data, function (error, rows) {
-                        if (error) {
-                            console.log(error);
-                        }
-                    });
 
-                    db.run(`UPDATE messages SET expiryDate = ? WHERE eventId = ?`, [data.$end_time, data.$eventId]);
+    let rows = await db.all(`SELECT * FROM events WHERE eventId = ?`, data.$eventId)
 
-                    db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId, function (error, rows) {
-                        if (error) {
-                            console.log(error);
-                        }
-                        for(let i=0; i<rows.length; i++) {
-                            updateMessage(copyData, rows[i]["channelID"], rows[i]["messageID"]);
-                        }
-                    })
-                }
-            });
-        } else {
-            let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
-            db.run(query, data, function (error, rows) {
-                if (error) {
-                    console.log(error);
-                }
-            });
+    if(rows.length > 0) {
+        let query = `SELECT * FROM events WHERE start_time = $start_time AND end_time = $end_time AND eventName = $eventName AND eventDesc = $eventDesc AND eventAttendees = $eventAttendees AND eventUrl=$eventUrl AND eventLocation=$eventLocation AND eventPicture = $eventPicture AND eventPriceRange = $eventPriceRange AND clubName = $clubName AND clubURL = $clubURL AND eventCategory = $eventCategory AND eventId=$eventId`
+        let updateRow = await db.all(query, data)
+        
+        if(updateRow.length == 0 || force) {
+            let update = `UPDATE events SET start_time = $start_time, end_time = $end_time, eventName = $eventName, eventDesc = $eventDesc, eventAttendees = $eventAttendees, eventUrl=$eventUrl, eventLocation=$eventLocation, eventPicture = $eventPicture, eventPriceRange = $eventPriceRange, clubName = $clubName, clubURL = $clubURL, eventCategory = $eventCategory WHERE eventId=$eventId`
+            await db.run(update, data).catch((error) => {
+                console.error(error);
+            })
+
+            await db.run(`UPDATE messages SET expiryDate = ? WHERE eventId = ?`, [data.$end_time, data.$eventId]);
+
+            let messagesToUpdate = await db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId).catch((erorr) => {
+                console.error(error);
+            })
+
+            for(let i=0; i<messagesToUpdate.length; i++) {
+                updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
+            }
+            
         }
-    })
+        
+    } else {
+        let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
+        await db.run(query, data).catch( (error) => console.error(error) )
+    }
+    
     getUniqueClubs();
 }
 
@@ -174,34 +165,24 @@ function addPrefix(obj) {
     return Object.keys(obj).reduce((x, y) => ({ ...x, [`$${y}`]: obj[y] }), {});
 }
 
-function runQuery(query,params) {
-    db.all(query, params)(err, rows => {
-        return rows;
-    });
-}
-
-async function retrieveEvent(tags, clubName, callback) {
-    db.all(`SELECT * from events WHERE end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) ORDER BY start_time`,
+function retrieveEvent(tags, clubName) {
+    return db.all(`SELECT * from events WHERE end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) ORDER BY start_time`,
         {
             $tag:tags,
             $cname:clubName
-        }, (err,rows) => {
-        callback(rows);
-    }) 
+        })
 }
 
-async function retrieveTagEvents(tags, clubName, days, channelID, callback) {
+function retrieveTagEvents(tags, clubName, days, channelID) {
     let dateToLookFor = DateTime.now().plus({ days: days}).toISO();
 
-    db.all(`SELECT * from events t1 WHERE NOT exists (SELECT 1 FROM messages t2 WHERE t1.eventId = t2.eventId AND $channelID = t2.channelID) AND end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) AND $days > end_time ORDER BY start_time`,
+    return db.all(`SELECT * from events t1 WHERE NOT exists (SELECT 1 FROM messages t2 WHERE t1.eventId = t2.eventId AND $channelID = t2.channelID) AND end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) AND $days > end_time ORDER BY start_time`,
         {
             $tag:tags,
             $cname:clubName,
             $days:dateToLookFor,
             $channelID:channelID
-        }, (err,rows) => {
-        callback(rows);
-    }) 
+        });
 }
 
 
@@ -223,10 +204,8 @@ function updateTracker(query, data) {
     setupTrackerIDs();
 }
 
-function getOldMessages(callback) {
-    return db.all(`SELECT * FROM  messages WHERE expiryDate < strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`, (err, rows) => {
-        callback(rows);
-    });
+function getOldMessages() {
+    return db.all(`SELECT * FROM  messages WHERE expiryDate < strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`);
 }
 
 function removeMessage(msgID) {
@@ -237,55 +216,76 @@ function deleteTracker(trackerID) {
     db.run(`DELETE FROM trackers WHERE id=?`, trackerID);
 }
 
-function getAllTrackers(callback) {
-    return db.all(`SELECT * FROM trackers`, (err, rows) => {
-        callback(rows);
-    });
+function getAllTrackers() {
+    return db.all(`SELECT * FROM trackers`);
 }
 
-function getGuildTrackers(guild, callback) {
-    return db.all(`SELECT * FROM trackers WHERE guildID = ?`, guild, (err, rows) => {
-        callback(rows);
-    });
+function getGuildTrackers(guild) {
+    return db.all(`SELECT * FROM trackers WHERE guildID = ?`, guild);
 }
 
-function getEvent(id, callback) {
-    return db.all(`SELECT * FROM events WHERE eventId = ?`, id, (err, rows) => {
-        callback(rows);
-    });
+function getEvent(id) {
+    return db.all(`SELECT * FROM events WHERE eventId = ?`, id);
 }
 
-function getEventMessage(id, callback) {
-    return db.all(`SELECT * FROM events WHERE eventId = ?`, id, (err, rows) => {
-        callback(rows);
-    });
+function getEventMessage(id) {
+    return db.all(`SELECT * FROM messages WHERE messageID = ?`, id);
 }
 
-// Setup all known trackers
-setupTrackerIDs();
-getUniqueClubs();
+function getUserNotifications(userId, eventId) {
+    return db.all(`SELECT * FROM notifications WHERE eventId = ? AND userId = ?`, [eventId, userId]);
+}
 
-function setupTrackerIDs() {
+function getUserNotificationByMessage(messageID) {
+    return db.all(`SELECT * FROM notifications WHERE messageId=?`, messageID);
+}
+
+function addUserNotification(userId, eventId, messageId, notifyTime) {
+    db.run(`INSERT INTO notifications (userId, eventId, messageId, notifyTime) VALUES (?, ?, ?, ?);`,
+        [userId, eventId, messageId, notifyTime]
+    )
+}
+
+function deleteUserNotification(messageID) {
+    db.run(`DELETE FROM notifications WHERE messageId=?`, messageID);
+}
+
+function getPastDueNotifications() {
+    return db.all(`SELECT * FROM notifications WHERE notifyTime < strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc');`);
+}
+
+async function setupTrackerIDs() {
     activeTrackerIDs = [];
-    db.all('SELECT * FROM trackers', (err, rows) => {
-        for(let i=0; i<rows.length; i++) {
-            activeTrackerIDs.push({"id":`${rows[i]["id"]}`, desc:`ID: ${rows[i]["id"]} ┃┃ Channel: ${rows[i]["channelID"]}`, guildID:rows[i]["guildID"], channelID: rows[i]["channelID"]});
-        }
-    })
+    let trackers = await db.all('SELECT * FROM trackers')
+    for(let i=0; i<trackers.length; i++) {
+        activeTrackerIDs.push({"id":`${trackers[i]["id"]}`, desc:`ID: ${trackers[i]["id"]} ┃┃ Channel: ${trackers[i]["channelID"]}`, guildID:trackers[i]["guildID"], channelID: trackers[i]["channelID"]});
+    }
+    
 }
 
-function getUniqueClubs() {
+async function getUniqueClubs() {
     clubsList = [];
-    db.all('SELECT DISTINCT clubName FROM events', (err, rows) => {
-        for(let i=0; i<rows.length; i++) {
-            clubsList.push(rows[i]["clubName"])      
-        }
-    })
+    let clubs = await db.all('SELECT DISTINCT clubName FROM events')
+    for(let i=0; i<clubs.length; i++) {
+        clubsList.push(clubs[i]["clubName"])      
+    }
+    
+}
+
+function getClubList() {
+    return clubsList;
+}
+
+function getTrackerIDs() {
+    return activeTrackerIDs;
 }
 
 
 
-module.exports = { dbUpdate, runQuery, retrieveEvent, insertUpdateMessage, getOldMessages, removeMessage, getAllTrackers, retrieveTagEvents, insertTracker, getGuildTrackers, activeTrackerIDs, clubsList, updateTracker, getEvent, deleteTracker }
+module.exports = { dbUpdate, retrieveEvent, insertUpdateMessage, 
+    getOldMessages, removeMessage, getAllTrackers, retrieveTagEvents, insertTracker, 
+    getGuildTrackers, getTrackerIDs, getClubList, updateTracker, getEvent, deleteTracker, 
+    getEventMessage, getUserNotifications, addUserNotification, getUserNotificationByMessage, deleteUserNotification, getPastDueNotifications}
 
 // TBI
 
