@@ -252,7 +252,7 @@ function setClient(c) {
 
 // Prune old messages
 async function messagePruner() {
-    let rows = getOldMessages();
+    let rows = await getOldMessages();
     for(let i=0; i<rows.length; i++) {
         const channel = this.client.channels.cache.get(rows[i]["channelID"])
 
