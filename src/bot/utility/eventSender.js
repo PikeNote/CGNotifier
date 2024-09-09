@@ -78,7 +78,10 @@ function embedBuilder(queryResults, getLive = false) {
         .setLabel('🔔Notify Me (30 minutes)')
         .setStyle(ButtonStyle.Primary);
         
-    const row = new ActionRowBuilder().addComponents(button, notification);
+    const row = new ActionRowBuilder().addComponents(button);
+    if(!liveStatus) {
+        row.addComponents(notification);
+    }
 
     if(getLive) {
         return { embeds: [embed], components: [row], live:liveStatus}

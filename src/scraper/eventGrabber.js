@@ -1,8 +1,6 @@
 const axios = require('axios');
 const schedule = require('node-schedule');
-const { DateTime, Settings } = require("luxon");
-const http = require('http'); // or 'https' for https:// URLs
-const fs = require('fs');
+const { DateTime } = require("luxon");
 const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
@@ -50,7 +48,7 @@ async function updateInfo(force = false) {
 }
 
 async function getEventData(force = false) {
-
+    console.log('Getting event data...')
     events_storage = {};
 
     try {
@@ -95,7 +93,8 @@ async function getEventData(force = false) {
 
         await getEventDataRQ(force);
     } catch (e) {
-       console.log("iCal Fetching Failed") 
+        console.log(e);
+        console.log("iCal Fetching Failed") 
     }
 }
 
@@ -106,9 +105,14 @@ async function getEventDataRQ(force = false) {
         url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}`,
         responseType: 'json',
         headers: {
-            'Cookie': process.env.COOKIE_HEADER
+            'Cookie': process.env.COOKIE_HEADER,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Expires': '0'
         }
     }) .then ((response) => {
+       console.log('Fetched event data!')
+
       let cancelUpdate = false; 
       for(const event of response.data) {
         const fields = event["fields"].split(',').filter(n => n);
@@ -284,15 +288,21 @@ async function processNotifications() {
 
     for(let i=0; i<notifs.length; i++) {
         let event = await getEvent(notifs[i]["eventID"]);
-        let user = await this.client.user.fetch(notifs[i]['userId']);
+        let user = await this.client.users.fetch(notifs[i]['userID']);
         
         if(user != null && event.length != 0) {
             event = event[0];
-            let dmChannel = await user.createDM();
-            user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`)
+            user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`).catch(e => [
+
+            ])
+
+            user.dmChannel.fetch(notifs[i]['messageId']).then((oldNotif) => {
+                oldNotif.delete();
+            }).catch((e) => {
+                console.warn("Couldn't find message " + notifs[i]['messageId']);
+            })
+
             deleteUserNotification(notifs[i]['messageId']);
-            let oldNotif = await dmChannel.fetch(notifs[i]['messageId']);
-            oldNotif.delete();
         }
         
     }

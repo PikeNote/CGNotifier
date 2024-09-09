@@ -23,23 +23,33 @@ async function loginToCG(callback) {
         waitUntil: 'networkidle0',
       });
 
+    await page.waitForSelector('#username')
+
+    await delay(1000);
+
     await page.type("#username", process.env.LOGIN_USER);
     await page.type("#password", process.env.LOGIN_PASSWORD);
     await page.click("#login-submit");
 
-    await page.waitForSelector('.list-unstyled > li:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)', { visible: true, timeout: 10000 }) .catch(error => {
+    await page.waitForSelector('.list-unstyled > li:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)', { visible: true, timeout: 30000 }) .catch(error => {
         console.log("Could not load webpage! May be duo?")
     });
 
     const client = await page.target().createCDPSession();
     const cookies = (await client.send('Network.getAllCookies')).cookies;
 
-    const updatedCookie = `_hjSessionUser_2954518=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
+    const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
 
     setEnvValue('COOKIE_HEADER', updatedCookie);
 
     await browser.close();
     callback(true);
+}
+
+function delay(time) {
+  return new Promise(function(resolve) { 
+      setTimeout(resolve, time)
+  });
 }
 
 // .env editor; Copied from:
