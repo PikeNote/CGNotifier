@@ -51,7 +51,7 @@ module.exports = {
 
 			interaction.reply({content: "Adding new tracker... (events will be posted next update)", ephemeral: true})
 
-			insertTracker(interaction.commandGuildId, channelPost.id, clubName, days, eventTag);
+			insertTracker(interaction.guildId, channelPost.id, clubName, days, eventTag);
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}
