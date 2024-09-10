@@ -214,6 +214,7 @@ function removeMessage(msgID) {
 
 function deleteTracker(trackerID) {
     db.run(`DELETE FROM trackers WHERE id=?`, trackerID);
+    setupTrackerIDs();
 }
 
 function getAllTrackers() {
