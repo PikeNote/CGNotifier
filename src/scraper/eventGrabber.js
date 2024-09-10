@@ -43,8 +43,8 @@ let events_storage = {};
 async function updateInfo(force = false) {
     console.log('Refreshing event DB, pruning messages, and posting new events!');
     await getEventData(force);
-    messagePruner();
-    postnewTrackers();
+    await messagePruner();
+    await postnewTrackers();
 }
 
 async function getEventData(force = false) {
@@ -267,8 +267,10 @@ async function messagePruner() {
 }
 
 async function postnewTrackers() {
+    console.log('Updating trackers...')
     let rows = await getAllTrackers();
     for(let i=0; i<rows.length; i++) {
+        console.log('Going through all channels...')
         this.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
             for(let ii=0; ii<result.length; ii++) {
