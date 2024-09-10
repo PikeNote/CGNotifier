@@ -16,7 +16,7 @@ const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
 const descriptionCleaner = /. . . . /gm
 let failed = false;
 
-const job = schedule.scheduleJob('*/30 * * * *', () => {
+const job = schedule.scheduleJob('*/10 * * * *', () => {
     failed = false;
     updateInfo();
 });
