@@ -254,7 +254,7 @@ function setClient(c) {
 async function messagePruner() {
     let rows = await getOldMessages();
     for(let i=0; i<rows.length; i++) {
-        const channel = this.client.channels.cache.get(rows[i]["channelID"])
+        const channel = this.client.channels.fetch(rows[i]["channelID"])
 
         channel.messages.fetch(rows[i]["messageID"]).then(message => {
             message.delete();
