@@ -6,8 +6,9 @@ function embedBuilder(queryResults, getLive = false) {
 	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
     let liveStatus = false;
+    let eventName = queryResults["eventName"];
     if(DateTime.fromISO(queryResults["start_time"]) < Date.now()) {
-        queryResults["eventName"] = "(🔴 LIVE) " + queryResults["eventName"];
+        eventName = "(🔴 LIVE) " + queryResults["eventName"];
         color = "#D2042D"
         liveStatus = true;
     }
@@ -17,7 +18,7 @@ function embedBuilder(queryResults, getLive = false) {
         name: queryResults["clubName"],
         url: queryResults["clubURL"],
     })
-    .setTitle(queryResults["eventName"])
+    .setTitle(eventName)
     .setURL(queryResults["eventUrl"])
     .setDescription(queryResults["eventDesc"])
     .addFields(
