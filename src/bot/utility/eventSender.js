@@ -2,7 +2,7 @@ const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilde
 const {DateTime, Settings} = require('luxon');
 const {insertUpdateMessage} = require('../../scraper/sqliteHelper')
 
-function embedBuilder(queryResults, getLive = false) {
+function embedBuilder(queryResults) {
     let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
@@ -71,7 +71,7 @@ function embedBuilder(queryResults, getLive = false) {
     }
 
     let button = new ButtonBuilder()
-        .setLabel('Add to Calendar 🗓️')
+        .setLabel('🗓️ Add to Calendar')
         .setURL(encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,100) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`))
         .setStyle(ButtonStyle.Link);
 
@@ -79,15 +79,17 @@ function embedBuilder(queryResults, getLive = false) {
         .setCustomId('notifCreate')
         .setLabel('🔔Notify Me (30 minutes)')
         .setStyle(ButtonStyle.Primary);
-        
-    const row = new ActionRowBuilder().addComponents(button);
-    if(!liveStatus) {
-        row.addComponents(notification);
+    
+    let eventAdd = new ButtonBuilder()
+        .setCustomId('addEvent')
+        .setLabel('📋 Add To Events')
+        .setStyle(ButtonStyle.Success);
+
+    if(liveStatus) {
+        return { embeds: [embed], live:liveStatus}
     }
 
-    if(getLive) {
-        return { embeds: [embed], components: [row], live:liveStatus}
-    }
+    const row = new ActionRowBuilder().addComponents(button, eventAdd, notification);
     return { embeds: [embed], components: [row] }
 
 }
