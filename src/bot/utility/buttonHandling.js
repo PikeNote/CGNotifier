@@ -91,7 +91,7 @@ async function addEvent(interaction) {
                     privacyLevel: 2,
                     entityType: GuildScheduledEventEntityType.External,
                     entityMetadata: {
-                        location: location
+                        location: event['eventLocation']
                     }
                 }).catch(e => {
                     console.warn(e);
