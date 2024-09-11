@@ -61,7 +61,8 @@ const serverSettings = `
         channelID TEXT NOT NULL,
         clubFilter TEXT NOT NULL,
         daysPost TEXT NOT NULL,
-        tagFilter TEXT NOT NULL
+        tagFilter TEXT NOT NULL,
+        postEvent INTEGER NOT NULL DEFAULT 0
     )`;
 
 const userNotificationTable = `
@@ -193,9 +194,9 @@ function insertUpdateMessage(msgID, chnID, eventID, data, expiryDate, liveStatus
     )
 }
 
-function insertTracker(guildID, chnID, clubFilter, days, tagFilter) {
-    db.run(`INSERT INTO trackers (guildID, channelID, clubFilter, daysPost, tagFilter) VALUES (?, ?, ?, ?, ?);`,
-        [guildID, chnID, clubFilter, days, tagFilter]
+function insertTracker(guildID, chnID, clubFilter, days, tagFilter, postEvent) {
+    db.run(`INSERT INTO trackers (guildID, channelID, clubFilter, daysPost, tagFilter, postEvent) VALUES (?, ?, ?, ?, ?);`,
+        [guildID, chnID, clubFilter, days, tagFilter, postEvent]
     )
     setupTrackerIDs();
 }

@@ -3,7 +3,7 @@ const {insertTracker, getClubList} = require('../../../scraper/sqliteHelper');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('track_events')
+		.setName('create_tracker')
 		.setDescription('Post new future events and live update events based on tags and club names within a time period')
 		.addChannelOption(option =>
 			option.setName('channel')
@@ -25,7 +25,11 @@ module.exports = {
 			.setDescription("The number of days out from an event when you would like to see it posted (Default: 10)")
 			.setMaxValue(30)
 			.setMinValue(1)
-		),
+		)
+		.addBooleanOption(option => {
+			option.setName('post_event')
+			.setDescription("Whether you want the bot to automaticlly post to Discord events (Default: False")
+		}),
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
 		let filtered;
@@ -48,10 +52,11 @@ module.exports = {
 			clubName = clubName.trim();
 			const eventTag = interaction.options.getString("tags") ?? '';
 			const days = interaction.options.getInteger("number_of_days") ?? 10
+			const postEvent = interaction.options.getBoolean('post_event') ?? false;
 
 			interaction.reply({content: "Adding new tracker... (events will be posted next update)", ephemeral: true})
 
-			insertTracker(interaction.guild.id, channelPost.id, clubName, days, eventTag);
+			insertTracker(interaction.guild.id, channelPost.id, clubName, days, eventTag, postEvent ? 1 : 0);
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}

@@ -30,7 +30,11 @@ module.exports = {
 			.setDescription("New number of days out from an event when you would like to see it posted (Default: 10)")
 			.setMaxValue(30)
 			.setMinValue(1)
-		),
+		)
+		.addBooleanOption(option => {
+			option.setName('post_event')
+			.setDescription("Whether you want the bot to automaticlly post to Discord events (Default: False")
+		}),
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
 		let choices;
@@ -64,6 +68,7 @@ module.exports = {
 			const clubName = interaction.options.getString("club_name");
 			const eventTag = interaction.options.getString("tags");
 			const days = interaction.options.getInteger("number_of_days")
+			const postEvent = interaction.options.getBoolean('post_event');
 
 			let choices = getTrackerIDs().filter(choice => choice.id==data.$id);
 
@@ -90,6 +95,10 @@ module.exports = {
 			if(days) {
 				updatedFields.push(`daysPost=$daysPost`);
 				data.$daysPost = days;
+			}
+
+			if(postEvent) {
+				updatedFields.push(`postEvent=${postEvent ? 1 : 0}`)
 			}
 
 			interaction.reply({content: "Updated your tracker!", ephemeral: true})
