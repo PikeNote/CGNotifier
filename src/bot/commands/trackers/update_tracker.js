@@ -31,10 +31,10 @@ module.exports = {
 			.setMaxValue(30)
 			.setMinValue(1)
 		)
-		.addBooleanOption(option => {
-			option.setName('post_event')
-			.setDescription("Whether you want the bot to automaticlly post to Discord events (Default: False")
-		}),
+		.addBooleanOption(option =>
+            option.setName('post_event')
+            .setDescription('Whether you want the bot to automaticlly post to Discord events (Default: False)')
+		),
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
 		let choices;

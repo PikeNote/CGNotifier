@@ -149,7 +149,10 @@ async function dbUpdate(data, force = false) {
             })
 
             for(let i=0; i<messagesToUpdate.length; i++) {
-                updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
+                let newData = updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
+                if(newData.length > 0) {
+                    insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
+                }
             }
             
         }

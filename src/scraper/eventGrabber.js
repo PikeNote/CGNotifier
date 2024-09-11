@@ -5,7 +5,7 @@ const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
 const {loginToCG} = require('../scraper/puppeteerLogin');
-const {postEvent} = require('../bot/utility/buttonHandling');
+const {postEvent} = require('../bot/utility/eventHandling');
 // Initalize dotenv environent
 require('dotenv').config()
 

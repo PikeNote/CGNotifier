@@ -1,6 +1,5 @@
 const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
 const {DateTime, Settings} = require('luxon');
-const {insertUpdateMessage} = require('../../scraper/sqliteHelper')
 
 function embedBuilder(queryResults) {
     let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -94,16 +93,17 @@ function embedBuilder(queryResults) {
 
 }
 
-function updateMessage(queryResults, channelID, messageID) {
-    global.client.channels.fetch(channelID).then((channel) => {
-        channel.messages.fetch(messageID).then(message => {
+async function updateMessage(queryResults, channelID, messageID) {
+    let newData = [];
+    await global.client.channels.fetch(channelID).then(async (channel) => {
+        await channel.messages.fetch(messageID).then(message => {
             let embed = embedBuilder(queryResults,true);
             let live = embed['live'];
             delete embed['live'];
             if(live && queryResults["liveStatus"] == 0) {
                 message.delete();
                 channel.send(embed).then(message => {
-                    insertUpdateMessage(message.id, channel.id, queryResults["eventId"],JSON.stringify(queryResults),queryResults["end_time"], 1);
+                    newData = [message.id, channel.id, queryResults["eventId"],JSON.stringify(queryResults),queryResults["end_time"], 1];
                 })
             } else {
                 message.edit(embed);
@@ -114,6 +114,7 @@ function updateMessage(queryResults, channelID, messageID) {
     }).catch(e => {
         
     })
+    return newData;
 }
 
 module.exports = {updateMessage, embedBuilder}
