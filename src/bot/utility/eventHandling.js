@@ -1,4 +1,4 @@
-const {GuildScheduledEventManager} = require('discord.js');
+const {GuildScheduledEventManager, GuildScheduledEventEntityType} = require('discord.js');
 const {DateTime} = require('luxon');
 const axios = require('axios');
 
