@@ -1,8 +1,8 @@
 const {GuildScheduledEventManager} = require('discord.js');
 const {DateTime} = require('luxon');
 
-async function postEvent(event, reason) {
-    const event_manager = new GuildScheduledEventManager(interaction.guild);
+async function postEvent(guild, event, reason) {
+    const event_manager = new GuildScheduledEventManager(guild);
 
     let image = null;
     

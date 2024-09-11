@@ -74,7 +74,7 @@ async function addEvent(interaction) {
             let event = await getEvent(eventId);
             
             if(event.length > 0) {
-                postEvent(event[0], `Requested by ${interaction.user.username} (${interaction.user.id})`)
+                postEvent(interaction.guild, event[0], `Requested by ${interaction.user.username} (${interaction.user.id})`)
             }
         }
     }
