@@ -1,5 +1,6 @@
 const {GuildScheduledEventManager} = require('discord.js');
 const {DateTime} = require('luxon');
+const axios = require('axios');
 
 async function postEvent(guild, event, reason) {
     const event_manager = new GuildScheduledEventManager(guild);
