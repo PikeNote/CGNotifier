@@ -250,23 +250,23 @@ async function dateConverter(input) {
 async function messagePruner() {
     let rows = await getOldMessages();
     for(let i=0; i<rows.length; i++) {
-        const channel = await global.client.channels.fetch(rows[i]["channelID"])
+        try {
+            const channel = await global.client.channels.fetch(rows[i]["channelID"])
 
-        channel.messages.fetch(rows[i]["messageID"]).then(message => {
+            const message = await channel.messages.fetch(rows[i]["messageID"])
             message.delete();
             removeMessage(rows[i]["messageID"]);
-        }).catch( error => {
-            console.log(error) 
+        } catch (e) {
             removeMessage(rows[i]["messageID"])
-        })
+        }
     }
 }
 
 async function postnewTrackers() {
     console.log('Updating trackers...')
     let rows = await getAllTrackers();
+    console.log('Going through all channels...')
     for(let i=0; i<rows.length; i++) {
-        console.log('Going through all channels...')
         global.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
             for(let ii=0; ii<result.length; ii++) {
