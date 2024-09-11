@@ -7,28 +7,22 @@ const {buttonClicked} = require('../bot/utility/buttonHandling.js');
 require('dotenv').config()
 require('./deploy-commands.js');
 
-let setClient;
-
 // Load .env varaibles for Discord token handling
 
 
 // Create a new client instance
-const client = new Client({ intents: [
+global.client = new Client({ intents: [
 	GatewayIntentBits.Guilds,
 	GatewayIntentBits.GuildMessages,
 	GatewayIntentBits.MessageContent,
 	GatewayIntentBits.GuildMembers,
 ], partials: [Partials.Message, Partials.Channel] });
 
-this.client = client;
-
-client.once(Events.ClientReady, readyClient => {
+global.client.once(Events.ClientReady, readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-	setClient = require('../scraper/eventGrabber.js').setClient;
-	setClient(client);
 });
 
-client.commands = new Collection();
+global.client.commands = new Collection();
 
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
@@ -42,14 +36,14 @@ for (const folder of commandFolders) {
 		const command = require(filePath);
 		// Set a new item in the Collection with the key as the command name and the value as the exported module
 		if ('data' in command && 'execute' in command) {
-			client.commands.set(command.data.name, command);
+			global.client.commands.set(command.data.name, command);
 		} else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 		}
 	}
 }
 
-client.on(Events.InteractionCreate, async interaction => {
+global.client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
 	const command = interaction.client.commands.get(interaction.commandName);
 
@@ -70,7 +64,7 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });	
 
-client.on(Events.InteractionCreate, async interaction => {
+global.client.on(Events.InteractionCreate, async interaction => {
 	if (interaction.isAutocomplete()) {
 		const command = interaction.client.commands.get(interaction.commandName);
 
@@ -93,9 +87,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 
 // Log in to Discord with your client's token
-client.login(process.env.DISCORD_TOKEN);
-
-
-module.exports = {client}
+global.client.login(process.env.DISCORD_TOKEN);
 
 

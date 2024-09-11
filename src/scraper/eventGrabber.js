@@ -246,15 +246,11 @@ async function dateConverter(input) {
     return [];
 }
 
-function setClient(c) {
-    this.client = c;
-}
-
 // Prune old messages
 async function messagePruner() {
     let rows = await getOldMessages();
     for(let i=0; i<rows.length; i++) {
-        const channel = this.client.channels.fetch(rows[i]["channelID"])
+        const channel = global.client.channels.fetch(rows[i]["channelID"])
 
         channel.messages.fetch(rows[i]["messageID"]).then(message => {
             message.delete();
@@ -271,7 +267,7 @@ async function postnewTrackers() {
     let rows = await getAllTrackers();
     for(let i=0; i<rows.length; i++) {
         console.log('Going through all channels...')
-        this.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
+        global.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
             for(let ii=0; ii<result.length; ii++) {
                 channel.send(embedBuilder(result[ii])).then(msg => {
@@ -290,7 +286,7 @@ async function processNotifications() {
 
     for(let i=0; i<notifs.length; i++) {
         let event = await getEvent(notifs[i]["eventID"]);
-        let user = await this.client.users.fetch(notifs[i]['userID']);
+        let user = await global.client.users.fetch(notifs[i]['userID']);
         
         if(user != null && event.length != 0) {
             event = event[0];
@@ -310,4 +306,4 @@ async function processNotifications() {
     }
 }
 
-module.exports = {setClient, updateInfo};
+module.exports = {updateInfo};

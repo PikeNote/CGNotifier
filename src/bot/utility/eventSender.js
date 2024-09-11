@@ -92,7 +92,7 @@ function embedBuilder(queryResults, getLive = false) {
 }
 
 function updateMessage(queryResults, channelID, messageID) {
-    this.client.channels.fetch(channelID).then((channel) => {
+    global.client.channels.fetch(channelID).then((channel) => {
         channel.messages.fetch(messageID).then(message => {
             let embed = embedBuilder(queryResults,true);
             let live = embed['live'];
