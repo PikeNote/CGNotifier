@@ -75,7 +75,7 @@ async function addEvent(interaction) {
             if(event.length > 0) {
                 event = event[0];
                 const event_manager = new GuildScheduledEventManager(interaction.guild);
-                const image = null;
+                let image = null;
                 await axios.get(event['eventPicture'], 
                     {responseType: 'arraybuffer'
                 })
