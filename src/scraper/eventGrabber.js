@@ -250,7 +250,7 @@ async function dateConverter(input) {
 async function messagePruner() {
     let rows = await getOldMessages();
     for(let i=0; i<rows.length; i++) {
-        const channel = global.client.channels.fetch(rows[i]["channelID"])
+        const channel = await global.client.channels.fetch(rows[i]["channelID"])
 
         channel.messages.fetch(rows[i]["messageID"]).then(message => {
             message.delete();
