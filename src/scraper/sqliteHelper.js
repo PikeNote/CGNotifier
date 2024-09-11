@@ -50,6 +50,7 @@ const initMessageTable = `
         channelID TEXT NOT NULL,
         eventId INTEGER NOT NULL,
         expiryDate TEXT NOT NULL,
+        liveStatus INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY(eventId) REFERENCES events(eventId)
     )`;
 
@@ -186,9 +187,9 @@ function retrieveTagEvents(tags, clubName, days, channelID) {
 }
 
 
-function insertUpdateMessage(msgID, chnID, eventID, data, expiryDate) {
-    db.run(`INSERT INTO messages (messageID, channelID, eventId, oldData, expiryDate) VALUES (?, ?, ?, ?, ?);`,
-        [msgID, chnID, eventID, data, expiryDate]
+function insertUpdateMessage(msgID, chnID, eventID, data, expiryDate, liveStatus=0) {
+    db.run(`INSERT INTO messages (messageID, channelID, eventId, oldData, expiryDate, liveStatus) VALUES (?, ?, ?, ?, ?, ?);`,
+        [msgID, chnID, eventID, data, expiryDate, liveStatus]
     )
 }
 
