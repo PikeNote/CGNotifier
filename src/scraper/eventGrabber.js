@@ -44,7 +44,6 @@ async function updateInfo(force = false) {
     console.log('Refreshing event DB, pruning messages, and posting new events!');
     await getEventData(force);
     await messagePruner();
-    await postnewTrackers();
 }
 
 async function getEventData(force = false) {
@@ -197,6 +196,7 @@ async function getEventDataRQ(force = false) {
 
       if(!cancelUpdate) {
         updateDB(force);
+        postnewTrackers();
       } else {
         if(!failed){
             failed = true;

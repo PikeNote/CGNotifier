@@ -1,5 +1,6 @@
 const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
 const {DateTime, Settings} = require('luxon');
+const { removeMessage } = require('../../scraper/sqliteHelper');
 
 function embedBuilder(queryResults) {
     let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -88,7 +89,6 @@ function embedBuilder(queryResults) {
     }
 
     const row = new ActionRowBuilder().addComponents(eventAdd, notification);
-    console.log(queryResults["eventDesc"])
     return { embeds: [embed], components: [row] }
     
 }
@@ -109,7 +109,8 @@ async function updateMessage(queryResults, channelID, messageID) {
                 message.edit(embed);
             }
         }).catch(err => {
-            console.error(err);
+            //console.error(err);
+            removeMessage(messageID);
         });
     }).catch(e => {
         
