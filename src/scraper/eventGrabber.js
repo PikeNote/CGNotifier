@@ -27,7 +27,7 @@ const notificationCheck = schedule.scheduleJob('* * * * *', () => {
 
 const autoTagger = {
     "Food (Predicted)": {
-        "keywords" : ["food","lunch","luncheon","bbq","ice cream", "dessert", "lunch", "breakfast", "muffins", "delicious", "shawarma", "ice cream", "bbq", "barbeque"],
+        "keywords" : ["food","lunch","luncheon","bbq","ice cream", "dessert", "lunch", "breakfast", "muffin", "deliciou", "shawarma", "ice cream", "bbq", "barbeque", "taco", "pizza", "boba", "cake", "donut", "chocolate", "carrot"],
         "original" : "Food"
     }
 }

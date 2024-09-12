@@ -51,7 +51,7 @@ async function notifCreate(interaction) {
             const row = new ActionRowBuilder().addComponents(deleteBtn);
 
             if(notifications.length == 0) {
-                interaction.user.send({content: `Notification added for **${event['eventName']}** (${eventId}! \nThis notification is scheduled for ${notificationDateString}`, components: [row]}).then(msg => {
+                interaction.user.send({content: `Notification added for **${event['eventName']}** (${eventId})! \nThis notification is scheduled for ${notificationDateString}`, components: [row]}).then(msg => {
                     addUserNotification(interaction.user.id, eventId, msg.id, notificationDate.toISO());
                 }).catch(e => {
                     
