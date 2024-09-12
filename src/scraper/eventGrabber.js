@@ -281,7 +281,7 @@ async function postnewTrackers() {
             
         }).catch(e => {
             deleteTracker(rows[i]["id"]);
-            console.warn(e);
+            //console.warn(e);
         })   
     }
 }
@@ -290,23 +290,28 @@ async function processNotifications() {
     let notifs = await getPastDueNotifications();
 
     for(let i=0; i<notifs.length; i++) {
-        let event = await getEvent(notifs[i]["eventID"]);
-        let user = await global.client.users.fetch(notifs[i]['userID']);
-        
-        if(user != null && event.length != 0) {
-            event = event[0];
-            user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`).catch(e => [
+        try {
+            let event = await getEvent(notifs[i]["eventID"]);
+            let user = await global.client.users.fetch(notifs[i]['userID'])
+            
+            if(user != null && event.length != 0) {
+                event = event[0];
+                user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`).catch(e => [
 
-            ])
+                ])
 
-            user.dmChannel.fetch(notifs[i]['messageId']).then((oldNotif) => {
-                oldNotif.delete();
-            }).catch((e) => {
-                console.warn("Couldn't find message " + notifs[i]['messageId']);
-            })
+                user.dmChannel.fetch(notifs[i]['messageId']).then((oldNotif) => {
+                    oldNotif.delete();
+                }).catch((e) => {
+                    console.warn("Couldn't find message " + notifs[i]['messageId']);
+                })
 
+                deleteUserNotification(notifs[i]['messageId']);
+            }
+        } catch (e) {
             deleteUserNotification(notifs[i]['messageId']);
         }
+        
         
     }
 }

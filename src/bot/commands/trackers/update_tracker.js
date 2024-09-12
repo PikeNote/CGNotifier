@@ -43,11 +43,6 @@ module.exports = {
 		switch(focusedOption.name) {
 			case 'tracker_id':
 				choices = getTrackerIDs();
-				for(let i=0; i<choices.length; i++) {
-					interaction.client.channels.fetch(choices[i]["channelID"]).then(channel => {
-						choices[i]["desc"] = choices[i]["desc"].replace(choices[i]["channelID"],channel.name)
-					});
-				}
 				filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
 				break;
 			case 'club_name':
