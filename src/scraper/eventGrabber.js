@@ -2,7 +2,7 @@ const axios = require('axios');
 const schedule = require('node-schedule');
 const { DateTime } = require("luxon");
 const ical = require('node-ical');
-const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification} = require('./sqliteHelper');
+const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
 const {loginToCG} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
@@ -280,6 +280,7 @@ async function postnewTrackers() {
             }
             
         }).catch(e => {
+            deleteTracker(rows[i]["id"]);
             console.warn(e);
         })   
     }

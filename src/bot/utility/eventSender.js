@@ -1,8 +1,7 @@
 const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
 const {DateTime, Settings} = require('luxon');
-var shortUrl = require('node-url-shortener');
 
-async function embedBuilder(queryResults) {
+function embedBuilder(queryResults) {
     let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
@@ -58,6 +57,10 @@ async function embedBuilder(queryResults) {
             value: queryResults["eventLocation"],
             inline: false
         },
+        {
+            name: "🗓️ Add to Calendar",
+            value: `[Calendar Link](` + encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,500) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`) + ')'
+        }
     )
     .setColor(color)
     .setFooter({
@@ -69,13 +72,6 @@ async function embedBuilder(queryResults) {
     if(queryResults["eventPicture"]?.trim() != '') {
         embed.setImage(queryResults["eventPicture"])
     }
-
-    let url = await shortUrl.short(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,300) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`);
-
-    let button = new ButtonBuilder()
-        .setLabel('🗓️ Add to Calendar')
-        .setURL(url)
-        .setStyle(ButtonStyle.Link);
 
     let notification = new ButtonBuilder()
         .setCustomId('notifCreate')
@@ -91,9 +87,10 @@ async function embedBuilder(queryResults) {
         return { embeds: [embed], live:liveStatus}
     }
 
-    const row = new ActionRowBuilder().addComponents(button, eventAdd, notification);
+    const row = new ActionRowBuilder().addComponents(eventAdd, notification);
+    console.log(queryResults["eventDesc"])
     return { embeds: [embed], components: [row] }
-
+    
 }
 
 async function updateMessage(queryResults, channelID, messageID) {
