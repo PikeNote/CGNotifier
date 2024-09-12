@@ -181,7 +181,7 @@ async function getEventDataRQ(force = false) {
         for(const [key, arr] of Object.entries(autoTagger)) {
             if(!parsedEvents.includes(arr["original"])) {
                 for(const value of arr["keywords"]) {
-                    if(events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase().includes(value) || events_storage[temp_data["eventId"]]["eventName"].toLowerCase().includes(value)) {
+                    if(events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase().includes(value)) {
                         parsedEvents.push(key);
                         break;
                     }
