@@ -28,7 +28,7 @@ const notificationCheck = schedule.scheduleJob('* * * * *', () => {
 const autoTagger = {
     "Food": {
         "keywords" : ["food","lunch","luncheon","bbq","ice cream", "dessert", "lunch", "breakfast", "muffin", "delicious", "shawarma", "ice cream", "bbq", "barbeque", "taco", "pizza", "boba", "cake", "donut", "chocolate"],
-        "original" : "Food"
+        "counterkeywords": ["volunteering"]
     }
 }
 
@@ -178,13 +178,12 @@ async function getEventDataRQ(force = false) {
 
         let parsedEvents = JSON.parse(events_storage[temp_data["eventId"]]["eventCategory"]);
         for(const [key, arr] of Object.entries(autoTagger)) {
-            if(!parsedEvents.includes(arr["original"])) {
-                for(const value of arr["keywords"]) {
-                    if(events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase().includes(value)) {
-                        parsedEvents.push(key);
-                        break;
-                    }
+            if(!parsedEvents.includes(key)) {
+                let eventDesc = events_storage[temp_data["eventId"]]["eventDesc"].toLowerCase();
+                if (arr["keywords"].some(v => eventDesc.includes(v)) && !arr["counterkeywords"].some(v => eventDesc.includes(v))) {
+                    parsedEvents.push(key);
                 }
+                
             }
             
         }
