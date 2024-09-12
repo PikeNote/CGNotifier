@@ -269,6 +269,7 @@ async function postnewTrackers() {
     for(let i=0; i<rows.length; i++) {
         global.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
+            result = result.slice(0, 10);
             for(let ii=0; ii<result.length; ii++) {
                 channel.send(embedBuilder(result[ii])).then(msg => {
                     insertUpdateMessage(msg.id, msg.channelId, result[ii]["eventId"], JSON.stringify(result[ii]), result[ii]["end_time"]);
