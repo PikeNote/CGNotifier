@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, ChannelType, EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
+const {SlashCommandBuilder, RESTJSONErrorCodes , EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder} = require('discord.js');
 const {DateTime, Settings} = require('luxon');
 const { removeMessage } = require('../../scraper/sqliteHelper');
 
@@ -109,8 +109,11 @@ async function updateMessage(queryResults, channelID, messageID) {
                 message.edit(embed);
             }
         }).catch(err => {
-            //console.error(err);
-            removeMessage(messageID);
+            console.error(err);
+            if(err.code == RESTJSONErrorCodes.UnknownMessage) {
+                removeMessage(messageID);
+            }
+            
         });
     }).catch(e => {
         
