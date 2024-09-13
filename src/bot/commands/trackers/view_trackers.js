@@ -1,12 +1,13 @@
-const {SlashCommandBuilder, EmbedBuilder, PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, PermissionsBitField, PermissionFlagsBits} = require('discord.js');
 const {getGuildTrackers} = require('../../../scraper/sqliteHelper')
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('view_trackers')
-		.setDescription('List all active trackers in the current server/guild'),
+		.setDescription('List all active trackers in the current server/guild')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 	async execute(interaction) {
-        if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+        if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
             let rows = await getGuildTrackers(interaction.guildId)
             let fields = [];
             for(let i=0; i<rows.length; i++) {

@@ -65,7 +65,7 @@ async function notifCreate(interaction) {
 
 async function addEvent(interaction) {
     
-    if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.CreateEvents)) {
+    if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 
         let rows = await getEventMessage(interaction.message.id);
 

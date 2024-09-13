@@ -1,10 +1,11 @@
-const {SlashCommandBuilder, ChannelType, PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits} = require('discord.js');
 const {getTrackerIDs, getClubList, updateTracker} = require('../../../scraper/sqliteHelper')
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('update_tracker')
 		.setDescription('Edit a selected tracker with optional fields!')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
 		.addIntegerOption(option =>
 			option.setName("tracker_id")
 			.setDescription("The event tracker ID for the event (check view trackers for a list)")
@@ -56,7 +57,7 @@ module.exports = {
 
 	},
 	async execute(interaction) {
-		if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+		if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			let updatedFields = [];
 			let data = { $id: interaction.options.getInteger("tracker_id")};
 			const channelPost = interaction.options.getChannel("channel");

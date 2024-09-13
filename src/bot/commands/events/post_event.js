@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, ChannelType, PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits} = require('discord.js');
 const {getEvent} = require('../../../scraper/sqliteHelper')
 const {embedBuilder} = require('../../utility/eventSender')
 
@@ -6,6 +6,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('post_single_event')
 		.setDescription('Post a singular event based on the event ID that will get updated.')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
         .addStringOption(option =>
 			option.setName("event_id")
 			.setDescription("Event ID of the event you are trying to post")
@@ -17,7 +18,7 @@ module.exports = {
 				.addChannelTypes(ChannelType.GuildText)
 		),
 	async execute(interaction) {
-        if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+        if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
             let rows = await getEvent(interaction.options.getString('event_id'));
 			if(rows.length > 0) {
 				interaction.reply({content: 'Sending event...', ephemeral: true});

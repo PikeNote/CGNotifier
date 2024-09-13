@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, ChannelType, PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits} = require('discord.js');
 const {retrieveEvent, insertUpdateMessage} = require('../../../scraper/sqliteHelper');
 const { DateTime, Settings } = require("luxon");
 const {embedBuilder} = require("../../utility/eventSender");
@@ -11,6 +11,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('post_events')
 		.setDescription('Channel')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
 		.addIntegerOption(option =>
 			option.setName("events")
 				.setDescription("Number of events to post and update")
@@ -34,7 +35,7 @@ module.exports = {
 		),
 		
 	async execute(interaction) {
-		if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+		if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			const channelPost = interaction.options.getChannel("channel");
 			let numberOfEvents = interaction.options.getInteger("events");
 			let clubName = interaction.options.getString("club_name") ?? '';

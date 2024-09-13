@@ -1,10 +1,11 @@
-const {SlashCommandBuilder,ChannelType, PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder,ChannelType, PermissionsBitField, PermissionFlagsBits} = require('discord.js');
 const {insertTracker, getClubList} = require('../../../scraper/sqliteHelper');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('create_tracker')
 		.setDescription('Post new future events and live update events based on tags and club names within a time period')
+		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("Channel to post the events")
@@ -47,7 +48,7 @@ module.exports = {
 
 	},
 	async execute(interaction) {
-		if(interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+		if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			const channelPost = interaction.options.getChannel("channel");
 			let clubName = interaction.options.getString("club_name") ?? '';
 			clubName = clubName.trim();
