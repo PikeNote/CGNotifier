@@ -109,9 +109,11 @@ async function updateMessage(queryResults, channelID, messageID) {
                 message.edit(embed);
             }
         }).catch(err => {
-            console.error(err);
+            
             if(err.code == RESTJSONErrorCodes.UnknownMessage) {
                 removeMessage(messageID);
+            } else {
+                console.error(err);
             }
             
         });

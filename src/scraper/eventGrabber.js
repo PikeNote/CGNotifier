@@ -284,7 +284,12 @@ async function postnewTrackers() {
             }
             
         }).catch(e => {
-            deleteTracker(rows[i]["id"]);
+            if(e.code == 10008) {
+                deleteTracker(rows[i]["id"]);
+            } else {
+                console.error(e);
+            }
+            
             //console.warn(e);
         })   
     }
