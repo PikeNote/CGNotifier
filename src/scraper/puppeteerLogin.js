@@ -117,7 +117,9 @@ async function grabDescTags(url) {
   
 
   // Navigate the page to a URL.
-  await page.goto(url, {timeout: 20000});
+  await page.goto(url, {timeout: 20000}).catch((res) => {
+    return null;
+  });
 
   await page.setCacheEnabled(false);
 
@@ -128,25 +130,26 @@ async function grabDescTags(url) {
   if(!url_page.includes('https://community.case.edu/otp_signup')) {
     try{
       await page.waitForSelector('.rsvp__event-tags')
+      
+
+
+      const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
+      let tagList = [];
+      for(let i=0; i<preProcessTaglist[0].length; i++) {
+        tagList.push(preProcessTaglist[0][i][0]);
+      }
+
+      let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
+      const new_url = await page.url();
+      await page.close();
+      desc = desc.split('\n')
+      desc.pop();
+      desc.shift();
+      desc = desc.join('\n');
+      return [tagList, desc, new_url]
     } catch {
       return null;
     }
-
-
-    const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
-    let tagList = [];
-    for(let i=0; i<preProcessTaglist[0].length; i++) {
-      tagList.push(preProcessTaglist[0][i][0]);
-    }
-
-    let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
-    const new_url = await page.url();
-    await page.close();
-    desc = desc.split('\n')
-    desc.pop();
-    desc.shift();
-    desc = desc.join('\n');
-    return [tagList, desc, new_url]
   } else {
     let succ = false;
     await loginToCG((success) => succ = success, true);

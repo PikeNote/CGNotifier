@@ -100,30 +100,29 @@ function embedBuilder(queryResults) {
 }
 
 async function updateMessage(queryResults, channelID, messageID) {
-    let channel = await global.client.channels.fetch(channelID).catch(e => {
-        console.warn(e);
-        return [];
-    })
-    let message = await channel.messages.fetch(messageID).catch(e => {
-        if(err.code == '10008') {
+    try {
+        let channel = await global.client.channels.fetch(channelID)
+        let message = await channel.messages.fetch(messageID);
+
+        let embed = await embedBuilder(queryResults,true);
+        let live = embed['live'];
+        delete embed['live'];
+        if(live && queryResults["liveStatus"] == 0) {
+            message.delete();
+            let sentMsg = await channel.send(embed).catch( (e) => { console.warn(e);  return []; })
+            return [sentMsg.id, channel.id, queryResults["eventId"],JSON.stringify(queryResults),queryResults["end_time"], 1];
+        } else {
+            message.edit(embed);
+            return [];
+        }
+    } catch (err) {
+        if(err.code == '10008' || err.code == '10003') {
             removeMessage(messageID);
         } else {
             console.warn(err);
         }
         return [];
-    })
-    let embed = await embedBuilder(queryResults,true);
-    let live = embed['live'];
-    delete embed['live'];
-    if(live && queryResults["liveStatus"] == 0) {
-        message.delete();
-        let sentMsg = await channel.send(embed).catch( (e) => { console.warn(e);  return []; })
-        return [sentMsg.id, channel.id, queryResults["eventId"],JSON.stringify(queryResults),queryResults["end_time"], 1];
-    } else {
-        message.edit(embed);
-        return [];
     }
-
 }
 
 module.exports = {updateMessage, embedBuilder}
