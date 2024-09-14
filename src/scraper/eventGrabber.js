@@ -113,7 +113,7 @@ async function getEventDataRQ(force = false) {
        console.log('Fetched event data!')
 
       let cancelUpdate = false; 
-      for(const event of response.data) {
+      for(const [key, event] of Object.entries(response.data)) {
         const fields = event["fields"].split(',').filter(n => n);
 
         // Don't continue if it is a separator/divider
@@ -156,7 +156,7 @@ async function getEventDataRQ(force = false) {
                 "start_time":convertedDate[0],
                 "end_time":convertedDate[1],
                 "eventName":temp_data["eventName"],
-                "eventDesc":"",
+                "eventDesc":"https://community.case.edu/placeholder" + temp_data["eventURL"],
                 "eventAttendees":temp_data["eventAttendees"],
                 "eventUrl": "https://community.case.edu/placeholder" + temp_data["eventURL"],
                 "eventLocation":temp_data["eventLocation"],
