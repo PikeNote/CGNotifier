@@ -101,7 +101,7 @@ async function getEventDataRQ(force = false) {
     let currentDate = DateTime.now();
     axios({
         method: 'get',
-        url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}`,
+        url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
         responseType: 'json',
         headers: {
             'Cookie': process.env.COOKIE_HEADER,
@@ -273,7 +273,7 @@ async function postnewTrackers() {
     for(let i=0; i<rows.length; i++) {
         global.client.channels.fetch(rows[i]["channelID"]).then(async (channel) => {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
-            result = result.slice(0, 10);
+            result = result.slice(0, 15);
             for(let ii=0; ii<result.length; ii++) {
                 channel.send(embedBuilder(result[ii])).then(msg => {
                     insertUpdateMessage(msg.id, msg.channelId, result[ii]["eventId"], JSON.stringify(result[ii]), result[ii]["end_time"]);

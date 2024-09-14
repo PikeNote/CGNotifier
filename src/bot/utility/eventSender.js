@@ -110,7 +110,7 @@ async function updateMessage(queryResults, channelID, messageID) {
             }
         }).catch(err => {
             
-            if(err.code == RESTJSONErrorCodes.UnknownMessage) {
+            if(err.code == '10008') {
                 removeMessage(messageID);
             } else {
                 console.error(err);
