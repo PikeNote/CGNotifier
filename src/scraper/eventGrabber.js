@@ -11,7 +11,7 @@ require('dotenv').config()
 
 // Save me wtf is this
 const regexMultiDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm;
-const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+) – ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm
+const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]{4})([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+) - ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm
 const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
 const descriptionCleaner = /. . . . /gm
 let failed = false;
@@ -111,7 +111,7 @@ async function getEventDataRQ(force = false) {
         url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
         responseType: 'json',
         headers: axiosHeader
-    }) .then ((response) => {
+    }) .then (async (response) => {
        console.log('Fetched event data!')
 
       let cancelUpdate = false; 
@@ -149,7 +149,7 @@ async function getEventDataRQ(force = false) {
         }
 
         if(!events_storage.hasOwnProperty(temp_data["eventId"])) {
-            const convertedDate = dateConverter(temp_data["eventDates"]);
+            const convertedDate = await dateConverter(temp_data["eventDates"]);
             // Skip old events
             if(new Date(convertedDate) < new Date()) {
                 continue;
@@ -158,9 +158,9 @@ async function getEventDataRQ(force = false) {
                 "start_time":convertedDate[0],
                 "end_time":convertedDate[1],
                 "eventName":temp_data["eventName"],
-                "eventDesc":"https://community.case.edu/placeholder" + temp_data["eventURL"],
+                "eventDesc":"https://community.case.edu/placeholder" + temp_data["eventUrl"],
                 "eventAttendees":temp_data["eventAttendees"],
-                "eventUrl": "https://community.case.edu/placeholder" + temp_data["eventURL"],
+                "eventUrl": "https://community.case.edu/placeholder" + temp_data["eventUrl"],
                 "eventLocation":temp_data["eventLocation"],
                 "eventPicture":"https://community.case.edu" + temp_data["eventPicture"],
                 "eventPriceRange":temp_data["eventPriceRange"],
@@ -237,19 +237,19 @@ async function dateConverter(input) {
 
     if(singleDayMatch.length > 0) {
         const singleMatch = singleDayMatch[0]
-        return [isoString(DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5]} ${singleMatch[6]}`, 'MMM d yyyy h m a').toISO()),
-        isoString(DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[4]} ${matchTwo[5]} ${matchTwo[6]}`, 'MMM d yyyy h m a').toISO())];
+        return [DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5] ?? '00'} ${singleMatch[6]}`, 'MMM d yyyy h m a').toISO(),
+        DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[7]} ${singleMatch[8] ?? '00'} ${singleMatch[9]}`, 'MMM d yyyy h m a').toISO()];
     } else {
         const multiDateMatch = [...input.matchAll(regexMultiDate)];
         if(multiDateMatch.length > 1) {
             const matchOne = multiDateMatch[0];
             const matchTwo = multiDateMatch[1];
-            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5]} ${matchOne[6]}`, 'MMM d yyyy h m a').toISO(),
-            DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchTwo[7]} ${matchTwo[8]} ${matchTwo[9]}`, 'MMM d yyyy h m a').toISO()];
+            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a').toISO(),
+            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[7]} ${matchTwo[8] ?? '00'} ${matchTwo[9]}`, 'MMM d yyyy h m a').toISO()];
+        } else{
+            return [];
         }
     }
-
-    return [];
 }
 
 // Prune old messages
@@ -277,7 +277,8 @@ async function postnewTrackers() {
             let result = await retrieveTagEvents(rows[i]["tagFilter"],rows[i]["clubFilter"],rows[i]["daysPost"],rows[i]["channelID"]);
             result = result.slice(0, 15);
             for(let ii=0; ii<result.length; ii++) {
-                channel.send(embedBuilder(result[ii])).then(msg => {
+                let em = await embedBuilder(result[ii]);
+                channel.send(em).then(msg => {
                     insertUpdateMessage(msg.id, msg.channelId, result[ii]["eventId"], JSON.stringify(result[ii]), result[ii]["end_time"]);
                     if(result[ii]['postEvent'] == 1) {
                         postEvent(interaction.guild, result[ii], `Generated by tracker ID #${rows[i]['id']}`);
@@ -290,7 +291,7 @@ async function postnewTrackers() {
                 deleteTracker(rows[i]["id"]);
             } else {
                 console.error(e);
-            }
+            }   
             
             //console.warn(e);
         })   

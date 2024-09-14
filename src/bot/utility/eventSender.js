@@ -13,12 +13,18 @@ function embedBuilder(queryResults) {
         color = "#D2042D"
         liveStatus = true;
     }
-    
-    let embed = new EmbedBuilder()
-    .setAuthor({
+
+    let author = {
         name: queryResults["clubName"],
         url: queryResults["clubURL"],
-    })
+    }
+
+    if(queryResults["clubURL"] == '') {
+        author = {name: queryResults["clubName"]}
+    }
+    
+    let embed = new EmbedBuilder()
+    .setAuthor(author)
     .setTitle(eventName)
     .setURL(queryResults["eventUrl"])
     .setDescription(queryResults["eventDesc"])
