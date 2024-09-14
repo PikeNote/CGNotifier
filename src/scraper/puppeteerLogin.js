@@ -1,17 +1,27 @@
 const puppeteer = require("puppeteer");
 const fs = require('fs');
 const os = require('os');
+let browser;
 
-require('dotenv').config()
+require('dotenv').config();
 
-async function loginToCG(callback) {
-    console.log("Logging into CampusGroups")
-    // Launch the browser and open a new blank page
-    const browser = await puppeteer.launch({
+async function loginToCG(callback=(()=>{}), justLogin=false) {
+    if(browser == null) {
+      browser = await puppeteer.launch({
         headless: true,
         devtools: false,
-        args: ['--no-sandbox', '--incognito']
-    });
+        args: ['--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-infobars',
+              '--window-position=0,0',
+              '--ignore-certifcate-errors',
+              '--ignore-certifcate-errors-spki-list',
+              '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"']
+      });
+    }
+
+    console.log("Logging into CampusGroups")
+    // Launch the browser and open a new blank page
     const page = await browser.newPage();
 
     // Navigate the page to a URL.
@@ -19,11 +29,11 @@ async function loginToCG(callback) {
 
     await page.setCacheEnabled(false);
 
-    await page.waitForNavigation({
-        waitUntil: 'networkidle0',
-      });
+    await page.waitForNetworkIdle();
 
     await page.waitForSelector('#username')
+    await page.waitForSelector('#password')
+    await page.waitForSelector('#login-submit')
 
     await delay(1000);
 
@@ -31,18 +41,22 @@ async function loginToCG(callback) {
     await page.type("#password", process.env.LOGIN_PASSWORD);
     await page.click("#login-submit");
 
-    await page.waitForSelector('.list-unstyled > li:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)', { visible: true, timeout: 30000 }) .catch(error => {
+    await page.waitForNetworkIdle();
+
+    if(!justLogin) {
+      await page.waitForSelector('.list-unstyled > li:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)', { visible: true, timeout: 30000 }) .catch(error => {
         console.log("Could not load webpage! May be duo?")
-    });
+      });
 
-    const client = await page.target().createCDPSession();
-    const cookies = (await client.send('Network.getAllCookies')).cookies;
+      const client = await page.target().createCDPSession();
+      const cookies = (await client.send('Network.getAllCookies')).cookies;
 
-    const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
+      const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
 
-    setEnvValue('COOKIE_HEADER', updatedCookie);
-
-    await browser.close();
+      setEnvValue('COOKIE_HEADER', updatedCookie);
+    }
+    
+    await page.close();
     callback(true);
 }
 
@@ -82,4 +96,69 @@ function setEnvValue(key, value) {
     fs.writeFileSync(".env", ENV_VARS.join(os.EOL));
   }
 
-module.exports = {loginToCG}
+async function grabDescTags(url) {
+  console.log("Grabbing info from: " + url);
+
+  if(browser == null) {
+    browser = await puppeteer.launch({
+      headless: true,
+      devtools: false,
+      args: ['--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-infobars',
+        '--window-position=0,0',
+        '--ignore-certifcate-errors',
+        '--ignore-certifcate-errors-spki-list',
+        '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"']
+    });
+  }
+
+  const page = await browser.newPage();
+  
+
+  // Navigate the page to a URL.
+  await page.goto(url, {timeout: 20000});
+
+  await page.setCacheEnabled(false);
+
+  await page.waitForNetworkIdle();
+  
+  const url_page = await page.url();
+
+  if(!url_page.includes('https://community.case.edu/otp_signup')) {
+    try{
+      await page.waitForSelector('.rsvp__event-tags')
+    } catch {
+      return null;
+    }
+
+
+    const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
+    let tagList = [];
+    for(let i=0; i<preProcessTaglist[0].length; i++) {
+      tagList.push(preProcessTaglist[0][i][0]);
+    }
+
+    const desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
+    const new_url = await page.url();
+    await page.close();
+    return [tagList, desc.replace('Copy Link', ''), new_url]
+  } else {
+    let succ = false;
+    await loginToCG((success) => succ = success, true);
+    await page.close();
+
+    if(succ){ 
+      return grabDescTags(url);
+    } else {
+      return null;
+    }
+     
+    
+    
+  }
+  
+  
+}
+
+module.exports = {loginToCG, grabDescTags}

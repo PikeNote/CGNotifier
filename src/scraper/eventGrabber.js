@@ -4,8 +4,9 @@ const { DateTime } = require("luxon");
 const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder} = require('../bot/utility/eventSender')
-const {loginToCG} = require('../scraper/puppeteerLogin');
+const {loginToCG, grabDescTags} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
+
 // Initalize dotenv environent
 require('dotenv').config()
 
@@ -14,7 +15,15 @@ const regexMultiDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?
 const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]{4})([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+) - ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm
 const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
 const descriptionCleaner = /. . . . /gm
+
+let updateGrabberLock = false;
+let updateLock = false;
 let failed = false;
+
+const grabberLockJob = schedule.scheduleJob('0 0 * * *', () => {
+    updateGrabberLock = false;
+});
+
 
 const job = schedule.scheduleJob('*/10 * * * *', () => {
     failed = false;
@@ -41,9 +50,15 @@ let events_storage = {};
 //updateInfo();
 
 async function updateInfo(force = false) {
-    console.log('Refreshing event DB, pruning messages, and posting new events!');
-    await getEventData(force);
-    await messagePruner();
+    if(!updateLock) {
+        console.log('Refreshing event DB, pruning messages, and posting new events!');
+        updateLock = true;
+        await getEventData(force);
+        await messagePruner();
+    } else {
+        console.log("Attempted update but update lock still true")
+    }
+    
 }
 
 const axiosHeader = {
@@ -106,6 +121,9 @@ async function getEventData(force = false) {
 
 async function getEventDataRQ(force = false) {
     let currentDate = DateTime.now();
+    let tempGrabLock = updateGrabberLock;
+
+    updateGrabberLock = true;
     axios({
         method: 'get',
         url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
@@ -149,25 +167,32 @@ async function getEventDataRQ(force = false) {
         }
 
         if(!events_storage.hasOwnProperty(temp_data["eventId"])) {
+            let eventChk = await getEvent(temp_data["eventId"]);
+
             const convertedDate = await dateConverter(temp_data["eventDates"]);
-            // Skip old events
-            if(new Date(convertedDate) < new Date()) {
+            // Skip old events  
+            if(new Date(convertedDate) < new Date() || (eventChk.length > 0 && tempGrabLock)) {
                 continue;
+            }
+
+            let eventDesc = await grabDescTags("https://community.case.edu/placeholder" + temp_data["eventUrl"]);
+            if(eventDesc == null){
+                eventDesc = [temp_data["eventCategory"],"https://community.case.edu/placeholder" + temp_data["eventUrl"],"https://community.case.edu/placeholder" + temp_data["eventUrl"]]
             }
             let event_data = {
                 "start_time":convertedDate[0],
                 "end_time":convertedDate[1],
                 "eventName":temp_data["eventName"],
-                "eventDesc":"https://community.case.edu/placeholder" + temp_data["eventUrl"],
+                "eventDesc":eventDesc[1],
                 "eventAttendees":temp_data["eventAttendees"],
-                "eventUrl": "https://community.case.edu/placeholder" + temp_data["eventUrl"],
+                "eventUrl": eventDesc[2],
                 "eventLocation":temp_data["eventLocation"],
                 "eventPicture":"https://community.case.edu" + temp_data["eventPicture"],
                 "eventPriceRange":temp_data["eventPriceRange"],
                 "clubName":temp_data["clubName"],
                 "clubURL":"",
                 "eventId":temp_data["eventId"],
-                "eventCategory": JSON.stringify(temp_data["eventCategory"])
+                "eventCategory": JSON.stringify(eventDesc[0])
             }
             events_storage[temp_data["eventId"]] = event_data;
         } else {
@@ -199,7 +224,7 @@ async function getEventDataRQ(force = false) {
 
         
       }
-
+      updateLock = false;
       if(!cancelUpdate) {
         updateDB(force);
         postnewTrackers();
