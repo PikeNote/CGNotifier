@@ -45,14 +45,15 @@ async function notifCreate(interaction) {
             .setStyle(ButtonStyle.Primary);
 
             let notifications = await getUserNotifications(interaction.user.id, eventId);
-            let notificationDate = DateTime.fromISO(event['start_time']).minus({minutes: 30});
+            let notificationDate = DateTime.fromISO(event['start_time']).minus({minutes: 30}).toUTC();
+            let isoNotificationTime = notificationDate.toISO();
             let notificationDateString = notificationDate.setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
             const row = new ActionRowBuilder().addComponents(deleteBtn);
 
             if(notifications.length == 0) {
                 interaction.user.send({content: `Notification added for **${event['eventName']}** (${eventId})! \nThis notification is scheduled for ${notificationDateString}`, components: [row]}).then(msg => {
-                    addUserNotification(interaction.user.id, eventId, msg.id, notificationDate.toISO());
+                    addUserNotification(interaction.user.id, eventId, msg.id, isoNotificationTime);
                 }).catch(e => {
                     
                 }) ;

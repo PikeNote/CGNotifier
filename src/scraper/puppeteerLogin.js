@@ -139,10 +139,14 @@ async function grabDescTags(url) {
       tagList.push(preProcessTaglist[0][i][0]);
     }
 
-    const desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
+    let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
     const new_url = await page.url();
     await page.close();
-    return [tagList, desc.replace('Copy Link', ''), new_url]
+    desc = desc.split('\n')
+    desc.pop();
+    desc.shift();
+    desc = desc.join('\n');
+    return [tagList, desc, new_url]
   } else {
     let succ = false;
     await loginToCG((success) => succ = success, true);
