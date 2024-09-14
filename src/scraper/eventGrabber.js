@@ -46,12 +46,19 @@ async function updateInfo(force = false) {
     await messagePruner();
 }
 
+const axiosHeader = {
+    'Cookie': process.env.COOKIE_HEADER,
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+}
+
 async function getEventData(force = false) {
     console.log('Getting event data...')
     events_storage = {};
 
     try {
-        const events = await ical.fromURL("https://community.case.edu/ical/cwru/ical_cwru.ics");
+        const events = await ical.fromURL(`https://community.case.edu/ical/cwru/ical_cwru.ics?timestamp=${new Date().getTime()}`, {headers: axiosHeader});
         for (const event of Object.values(events)) {
 
             
@@ -101,14 +108,9 @@ async function getEventDataRQ(force = false) {
     let currentDate = DateTime.now();
     axios({
         method: 'get',
-        url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
+        url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
         responseType: 'json',
-        headers: {
-            'Cookie': process.env.COOKIE_HEADER,
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-        }
+        headers: axiosHeader
     }) .then ((response) => {
        console.log('Fetched event data!')
 
