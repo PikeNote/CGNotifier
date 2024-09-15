@@ -123,40 +123,42 @@ loadDatabase();
 
 
 async function dbUpdate(data, force = false) {
-    data = addPrefix(data);
-    if(!data.$start_time) {
-        return;
-    }
-
-    let rows = await db.all(`SELECT * FROM events WHERE eventId = ?`, data.$eventId)
-
-    if(rows.length > 0) {
-        let query = `SELECT * FROM events WHERE start_time = $start_time AND end_time = $end_time AND eventName = $eventName AND eventDesc = $eventDesc AND eventAttendees = $eventAttendees AND eventUrl=$eventUrl AND eventLocation=$eventLocation AND eventPicture = $eventPicture AND eventPriceRange = $eventPriceRange AND clubName = $clubName AND clubURL = $clubURL AND eventCategory = $eventCategory AND eventId=$eventId`
-        let updateRow = await db.all(query, data)
-        
-        if(updateRow.length == 0 || force) {
-            let update = `UPDATE events SET start_time = $start_time, end_time = $end_time, eventName = $eventName, eventDesc = $eventDesc, eventAttendees = $eventAttendees, eventUrl=$eventUrl, eventLocation=$eventLocation, eventPicture = $eventPicture, eventPriceRange = $eventPriceRange, clubName = $clubName, clubURL = $clubURL, eventCategory = $eventCategory WHERE eventId=$eventId`
-            await db.run(update, data).catch((error) => {
-                console.error(error);
-            })
-
-            await db.run(`UPDATE messages SET expiryDate = ? WHERE eventId = ?`, [data.$end_time, data.$eventId]);
-
-            let messagesToUpdate = await db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId).catch((error) => {
-                console.error(error);
-            })
-
-            return messagesToUpdate;
+    return new Promise(async function(resolve, reject) {
+        data = addPrefix(data);
+        if(!data.$start_time) {
+            reject();
+        }
+    
+        let rows = await db.all(`SELECT * FROM events WHERE eventId = ?`, data.$eventId)
+    
+        if(rows.length > 0) {
+            let query = `SELECT * FROM events WHERE start_time = $start_time AND end_time = $end_time AND eventName = $eventName AND eventDesc = $eventDesc AND eventAttendees = $eventAttendees AND eventUrl=$eventUrl AND eventLocation=$eventLocation AND eventPicture = $eventPicture AND eventPriceRange = $eventPriceRange AND clubName = $clubName AND clubURL = $clubURL AND eventCategory = $eventCategory AND eventId=$eventId`
+            let updateRow = await db.all(query, data)
             
+            if(updateRow.length == 0 || force) {
+                let update = `UPDATE events SET start_time = $start_time, end_time = $end_time, eventName = $eventName, eventDesc = $eventDesc, eventAttendees = $eventAttendees, eventUrl=$eventUrl, eventLocation=$eventLocation, eventPicture = $eventPicture, eventPriceRange = $eventPriceRange, clubName = $clubName, clubURL = $clubURL, eventCategory = $eventCategory WHERE eventId=$eventId`
+                await db.run(update, data).catch((error) => {
+                    console.error(error);
+                })
+    
+                await db.run(`UPDATE messages SET expiryDate = ? WHERE eventId = ?`, [data.$end_time, data.$eventId]);
+    
+                let messagesToUpdate = await db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId).catch((error) => {
+                    console.error(error);
+                })
+    
+                resolve(messagesToUpdate);
+                
+            }
+            
+        } else {
+            let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
+            await db.run(query, data).catch( (error) => console.error(error) )
+            resolve([]);
         }
         
-    } else {
-        let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
-        await db.run(query, data).catch( (error) => console.error(error) )
-        return [];
-    }
-    
-    getUniqueClubs();
+        getUniqueClubs();
+    });
 }
 
 
