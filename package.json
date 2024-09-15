@@ -13,10 +13,13 @@
     "axios": "^1.7.5",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
     "luxon": "^3.5.0",
     "node-ical": "^0.18.0",
     "node-schedule": "^2.1.1",
     "puppeteer": "^23.3.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "totp-generator": "^1.0.0"

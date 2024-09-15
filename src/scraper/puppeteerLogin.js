@@ -1,10 +1,17 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-extra");
 const fs = require('fs');
 const os = require('os');
+const {getVerificationCode} = require('./gmailHandler')
 let browser;
+
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+puppeteer.use(StealthPlugin())
+
 
 require('dotenv').config();
 
+// Alternative CG login directly via SSO
+/*
 async function loginToCG(callback=(()=>{}), justLogin=false) {
     if(browser == null) {
       browser = await puppeteer.launch({
@@ -58,6 +65,94 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
     
     await page.close();
     callback(true);
+}
+*/
+
+loginToCG();
+
+async function loginToCG(callback=(()=>{}), justLogin=false) {
+  if(browser == null) {
+    browser = await puppeteer.launch({
+      headless: true,
+      devtools: false,
+      args: ['--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-infobars',
+            '--window-position=0,0',
+            '--ignore-certifcate-errors',
+            '--ignore-certifcate-errors-spki-list',
+            '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"',
+            '--incongnito']
+    });
+  }
+
+  console.log("Logging into CampusGroups")
+  // Launch the browser and open a new blank page
+  const page = await browser.newPage();
+
+  // Navigate the page to a URL.
+  await page.goto('https://community.case.edu/', {timeout: 0});
+
+  await page.setCacheEnabled(false);
+
+  await page.waitForNetworkIdle();
+
+  const url_page = await page.url();
+
+  if(!url_page.includes('https://community.case.edu/home_login')) {
+    console.log("Already logged in;")
+    page.close();
+    callback(true);
+    return;
+  }
+
+  await page.goto('https://community.case.edu/login_only', {timeout: 0});
+
+  await page.waitForNetworkIdle();
+
+  await page.waitForSelector('#login_email')
+  await delay(1000);
+  
+  await page.click("#a-all-others-sign-in-below");
+  
+  await page.type("#login_email", process.env.GMAIL_EMAIL);
+  await page.click("#remember_me");
+  await page.click("#loginButton");
+
+  
+
+  await page.waitForNavigation()
+
+  await page.waitForNetworkIdle();
+
+  await page.waitForSelector('#otp');
+  await page.waitForSelector('#otb_button');
+  
+  let verificationCode = await getVerificationCode(3000);
+
+  if(verificationCode != 0) {
+    await page.type('#otp', verificationCode);
+    await page.click('#otb_button');
+  }
+
+  await page.waitForNetworkIdle();
+  await page.waitForSelector('.list-unstyled > li:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > h2:nth-child(1)').catch((err) => {
+    console.log("Login failed.");
+    callback(false);
+    return;
+  })
+
+  if(!justLogin) {
+    const client = await page.target().createCDPSession();
+    const cookies = (await client.send('Network.getAllCookies')).cookies;
+
+    const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
+
+    setEnvValue('COOKIE_HEADER', updatedCookie);
+  }
+  
+  await page.close();
+  callback(true);
 }
 
 function delay(time) {
