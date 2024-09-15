@@ -10,6 +10,8 @@ puppeteer.use(StealthPlugin())
 
 require('dotenv').config();
 
+loginToCG();
+
 // Alternative CG login directly via SSO
 /*
 async function loginToCG(callback=(()=>{}), justLogin=false) {
@@ -68,8 +70,6 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 }
 */
 
-loginToCG();
-
 async function loginToCG(callback=(()=>{}), justLogin=false) {
   if(browser == null) {
     browser = await puppeteer.launch({
@@ -95,10 +95,11 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 
   await page.waitForNetworkIdle();
 
+
   const url_page = await page.url();
 
   if(!url_page.includes('https://community.case.edu/home_login')) {
-    console.log("Already logged in;")
+    console.log("Already logged in; Current URL: " + url_page);
     page.close();
     callback(true);
     return;
@@ -143,12 +144,17 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
   if(!justLogin) {
     const client = await page.target().createCDPSession();
     const cookies = (await client.send('Network.getAllCookies')).cookies;
+    let updatedCookieStr = [];
+    for (let i=0; i<cookies.length; i++) {
+      updatedCookieStr.push(cookies[i]['name'] + "=" + cookies[i]['value']);
+    }
 
-    const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
+    const updatedCookie = updatedCookieStr.join(';')
 
     setEnvValue('COOKIE_HEADER', updatedCookie);
+    process.env.COOKIE_HEADER = updatedCookie;
   }
-  
+  console.log("Login Yipieee")
   await page.close();
   callback(true);
 }

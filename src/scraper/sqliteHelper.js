@@ -123,7 +123,6 @@ loadDatabase();
 
 
 async function dbUpdate(data, force = false) {
-    let copyData = Object.create(data);
     data = addPrefix(data);
     if(!data.$start_time) {
         return;
@@ -143,7 +142,7 @@ async function dbUpdate(data, force = false) {
 
             await db.run(`UPDATE messages SET expiryDate = ? WHERE eventId = ?`, [data.$end_time, data.$eventId]);
 
-            let messagesToUpdate = await db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId).catch((erorr) => {
+            let messagesToUpdate = await db.all(`SELECT * FROM messages WHERE eventId = ?`, data.$eventId).catch((error) => {
                 console.error(error);
             })
 

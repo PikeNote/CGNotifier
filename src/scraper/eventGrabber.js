@@ -249,15 +249,15 @@ async function getEventDataRQ(force = false) {
 }
 
 
-function updateDB(force = false) {
+async function updateDB(force = false) {
     for(const [key, value] of Object.entries(events_storage)) {
-        let messagesToUpdate = dbUpdate(value, force);
+        let messagesToUpdate = await dbUpdate(value, force);
         
         for(let i=0; i<messagesToUpdate.length; i++) {
 
-            let newData = updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
+            let newData = await updateMessage(value, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
             if(newData.length > 0) {
-                insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
+                await insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
             }
         }
     }
