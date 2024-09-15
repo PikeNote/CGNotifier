@@ -93,8 +93,6 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
   // Navigate the page to a URL.
   await page.goto('https://community.case.edu/', {timeout: 0});
 
-  await page.setCacheEnabled(false);
-
   await page.waitForNetworkIdle();
 
   const url_page = await page.url();
@@ -215,8 +213,6 @@ async function grabDescTags(url) {
   await page.goto(url, {timeout: 20000}).catch((res) => {
     return null;
   });
-
-  await page.setCacheEnabled(false);
 
   await page.waitForNetworkIdle();
   
