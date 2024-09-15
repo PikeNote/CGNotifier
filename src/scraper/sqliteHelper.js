@@ -1,7 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
 const {DateTime} = require('luxon');
-const {updateMessage} = require('../bot/utility/eventSender')
 let activeTrackerIDs = [];
 let clubsList = [];
 
@@ -148,18 +147,14 @@ async function dbUpdate(data, force = false) {
                 console.error(error);
             })
 
-            for(let i=0; i<messagesToUpdate.length; i++) {
-                let newData = updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
-                if(newData.length > 0) {
-                    insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
-                }
-            }
+            return messagesToUpdate;
             
         }
         
     } else {
         let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
         await db.run(query, data).catch( (error) => console.error(error) )
+        return [];
     }
     
     getUniqueClubs();

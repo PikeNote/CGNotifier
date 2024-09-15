@@ -3,9 +3,10 @@ const schedule = require('node-schedule');
 const { DateTime } = require("luxon");
 const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification, deleteTracker} = require('./sqliteHelper');
-const {embedBuilder} = require('../bot/utility/eventSender')
+const {embedBuilder,  updateMessage} = require('../bot/utility/eventSender')
 const {loginToCG, grabDescTags} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
+
 
 // Initalize dotenv environent
 require('dotenv').config()
@@ -250,7 +251,15 @@ async function getEventDataRQ(force = false) {
 
 function updateDB(force = false) {
     for(const [key, value] of Object.entries(events_storage)) {
-        dbUpdate(value, force);
+        let messagesToUpdate = dbUpdate(value, force);
+        
+        for(let i=0; i<messagesToUpdate.length; i++) {
+
+            let newData = updateMessage(copyData, messagesToUpdate[i]["channelID"], messagesToUpdate[i]["messageID"]);
+            if(newData.length > 0) {
+                insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
+            }
+        }
     }
     console.log("Database updated!")
 }
