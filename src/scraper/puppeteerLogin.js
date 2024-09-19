@@ -4,7 +4,7 @@ const os = require('os');
 const {getVerificationCode} = require('./gmailHandler')
 let browser;
 
-const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin())
 
 
@@ -70,7 +70,30 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 }
 */
 
+function processCookies() {
+  let cookies = process.env.COOKIE_HEADER;
+  let cookies_array = [];
+  cookies = cookies.split(';');
+  console.log(cookies);
+  for(let i=0; i<cookies.length; i++) {
+
+    let cookie_part = cookies[i].split('=');
+    
+    cookies_array.push({
+      'domain': 'community.case.edu',
+      'name': cookie_part[0],
+      'value': cookie_part[1]
+    })
+    
+    
+  }
+  console.log(cookies_array);
+  return cookies_array;
+}
+
 async function loginToCG(callback=(()=>{}), justLogin=false) {
+  let cookies = processCookies();
+
   if(browser == null) {
     browser = await puppeteer.launch({
       headless: true,
@@ -81,8 +104,7 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
             '--window-position=0,0',
             '--ignore-certifcate-errors',
             '--ignore-certifcate-errors-spki-list',
-            '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"',
-            '--incongnito']
+            '--user-agent="Mozilla/5.0 (Windows; Windows NT 10.5; x64) Gecko/20130401 Firefox/69.1"']
     });
   }
 
@@ -90,8 +112,18 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
   // Launch the browser and open a new blank page
   const page = await browser.newPage();
 
+  console.log(cookies);
+  await page.setCookie(...cookies);
+  console.log('Cookies set!')
+
   // Navigate the page to a URL.
-  await page.goto('https://community.case.edu/', {timeout: 0});
+  await page.goto('https://community.case.edu/', {timeout: 0}).catch((e) => {
+    console.warn(e)
+  });
+
+  await page.setCacheEnabled(false).catch((e) => {
+    console.warn(e)
+  });
 
   await page.waitForNetworkIdle();
 
@@ -105,17 +137,26 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
     return;
   }
 
-  await page.goto('https://community.case.edu/login_only', {timeout: 0});
+  console.log('Going to login page...')
+  await page.goto('https://community.case.edu/login_only', {timeout: 0}).catch((e) => {
+    console.warn(e)
+  });
 
   await page.waitForNetworkIdle();
 
-  await page.waitForSelector('#login_email')
+  await page.waitForSelector('#login_email').catch((e) => {
+    console.warn(e)
+  });
   await delay(1000);
   
-  await page.click("#a-all-others-sign-in-below");
+  await page.click("#a-all-others-sign-in-below").catch((e) => {
+    console.warn(e)
+  });
   
   await page.type("#login_email", process.env.GMAIL_EMAIL);
   await page.click("#remember_me");
+
+  console.log('Filled out data and logging in')
   await page.click("#loginButton");
 
   
@@ -126,6 +167,8 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 
   await page.waitForSelector('#otp');
   await page.waitForSelector('#otb_button');
+  
+  console.log('Awaiting OTP...')
   
   let verificationCode = await getVerificationCode(3000);
 
@@ -153,6 +196,8 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 
     setEnvValue('COOKIE_HEADER', updatedCookie);
     process.env.COOKIE_HEADER = updatedCookie;
+
+    require('dotenv').config({ override: true });
   }
   console.log("Login Yipieee")
   await page.close();
@@ -220,7 +265,9 @@ async function grabDescTags(url) {
     return null;
   });
 
-  await page.waitForNetworkIdle();
+  await page.waitForNetworkIdle().catch((res) => {
+    return null;
+  });
   
   const url_page = await page.url();
 

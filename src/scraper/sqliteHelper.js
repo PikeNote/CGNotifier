@@ -126,7 +126,7 @@ async function dbUpdate(data, force = false) {
     return new Promise(async function(resolve, reject) {
         data = addPrefix(data);
         if(!data.$start_time) {
-            reject();
+            resolve([]);
         }
     
         let rows = await db.all(`SELECT * FROM events WHERE eventId = ?`, data.$eventId)
@@ -152,7 +152,7 @@ async function dbUpdate(data, force = false) {
             }
             
         } else {
-            let query = `INSERT OR IGNORE INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
+            let query = `INSERT INTO events (eventId,start_time,end_time,eventName,eventDesc,eventAttendees,eventUrl,eventLocation, eventPicture,eventPriceRange,clubName,clubURL,eventCategory) VALUES ($eventId, $start_time, $end_time, $eventName, $eventDesc, $eventAttendees, $eventUrl, $eventLocation, $eventPicture, $eventPriceRange, $clubName, $clubURL, $eventCategory)`
             await db.run(query, data).catch( (error) => console.error(error) )
             resolve([]);
         }

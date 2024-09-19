@@ -17,13 +17,9 @@ const regexOneDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]{4})([0-9]+)(?:
 const caseURLRegex = /https:\/\/community\.case\.edu\/rsvp\?id=([0-9]+)/gm;
 const descriptionCleaner = /. . . . /gm
 
-let updateGrabberLock = false;
 let updateLock = false;
 let failed = false;
 
-const grabberLockJob = schedule.scheduleJob('0 0 * * *', () => {
-    updateGrabberLock = false;
-});
 
 
 const job = schedule.scheduleJob('*/10 * * * *', () => {
@@ -112,7 +108,7 @@ async function getEventData(force = false) {
             events_storage[event_data.eventId] = event_data;
         }
 
-
+        console.log("iCal Fetched")
         await getEventDataRQ(force);
     } catch (e) {
         console.log(e);
@@ -121,10 +117,9 @@ async function getEventData(force = false) {
 }
 
 async function getEventDataRQ(force = false) {
+    console.log("Getting main API")
     let currentDate = DateTime.now();
-    let tempGrabLock = updateGrabberLock;
 
-    updateGrabberLock = true;
     axios({
         method: 'get',
         url:  `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`,
@@ -172,7 +167,7 @@ async function getEventDataRQ(force = false) {
 
             const convertedDate = await dateConverter(temp_data["eventDates"]);
             // Skip old events  
-            if(new Date(convertedDate) < new Date() || (eventChk.length > 0 && tempGrabLock)) {
+            if(new Date(convertedDate) < new Date() || (eventChk.length > 0)) {
                 continue;
             }
 
@@ -188,7 +183,7 @@ async function getEventDataRQ(force = false) {
                 "eventAttendees":temp_data["eventAttendees"],
                 "eventUrl": eventDesc[2],
                 "eventLocation":temp_data["eventLocation"],
-                "eventPicture":"https://community.case.edu" + temp_data["eventPicture"],
+                "eventPicture":("https://community.case.edu" + temp_data["eventPicture"]).replace('r2_image_upload','r3_image_upload'),
                 "eventPriceRange":temp_data["eventPriceRange"],
                 "clubName":temp_data["clubName"],
                 "clubURL":"",
@@ -198,7 +193,7 @@ async function getEventDataRQ(force = false) {
             events_storage[temp_data["eventId"]] = event_data;
         } else {
             events_storage[temp_data["eventId"]]["eventPriceRange"] = temp_data["eventPriceRange"];
-            events_storage[temp_data["eventId"]]["eventPicture"] = "https://community.case.edu" + temp_data["eventPicture"];
+            events_storage[temp_data["eventId"]]["eventPicture"] = ("https://community.case.edu" + temp_data["eventPicture"]).replace('r2_image_upload','r3_image_upload');
             events_storage[temp_data["eventId"]]["eventName"] = temp_data["eventName"];
             events_storage[temp_data["eventId"]]["eventAttendees"] = temp_data["eventAttendees"];
             events_storage[temp_data["eventId"]]["eventLocation"] = temp_data["eventLocation"];
@@ -227,6 +222,7 @@ async function getEventDataRQ(force = false) {
       }
       updateLock = false;
       if(!cancelUpdate) {
+        console.log("Processing done!")
         updateDB(force);
         postnewTrackers();
       } else {
@@ -245,12 +241,13 @@ async function getEventDataRQ(force = false) {
       }
     }) .catch(function (error) { 
         console.log(error);
+        updateLock = false;
     });
 }
 
 
 async function updateDB(force = false) {
-    for(const [key, value] of Object.entries(events_storage)) {
+    Object.entries(events_storage).forEach(async ([key,value]) => {
         let messagesToUpdate = await dbUpdate(value, force);
         
         for(let i=0; i<messagesToUpdate.length; i++) {
@@ -260,7 +257,7 @@ async function updateDB(force = false) {
                 await insertUpdateMessage(newData[0], newData[1], newData[2], newData[3], newData[4], newData[5])
             }
         }
-    }
+    });
     console.log("Database updated!")
 }
 
@@ -271,15 +268,15 @@ async function dateConverter(input) {
 
     if(singleDayMatch.length > 0) {
         const singleMatch = singleDayMatch[0]
-        return [DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5] ?? '00'} ${singleMatch[6]}`, 'MMM d yyyy h m a').toISO(),
-        DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[7]} ${singleMatch[8] ?? '00'} ${singleMatch[9]}`, 'MMM d yyyy h m a').toISO()];
+        return [DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5] ?? '00'} ${singleMatch[6]}`, 'MMM d yyyy h m a').toUTC().toISO(),
+        DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[7]} ${singleMatch[8] ?? '00'} ${singleMatch[9]}`, 'MMM d yyyy h m a').toUTC().toISO()];
     } else {
         const multiDateMatch = [...input.matchAll(regexMultiDate)];
         if(multiDateMatch.length > 1) {
             const matchOne = multiDateMatch[0];
             const matchTwo = multiDateMatch[1];
-            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a').toISO(),
-            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[7]} ${matchTwo[8] ?? '00'} ${matchTwo[9]}`, 'MMM d yyyy h m a').toISO()];
+            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a').toUTC().toISO(),
+            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[7]} ${matchTwo[8] ?? '00'} ${matchTwo[9]}`, 'MMM d yyyy h m a').toUTC().toISO()];
         } else{
             return [];
         }
