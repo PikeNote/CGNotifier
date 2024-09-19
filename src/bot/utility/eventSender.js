@@ -101,6 +101,7 @@ function embedBuilder(queryResults) {
 
 async function updateMessage(queryResults, channelID, messageID) {
     try {
+        await new Promise(resolve => setTimeout(resolve, 500)); 
         let channel = await global.client.channels.fetch(channelID)
         let message = await channel.messages.fetch(messageID);
 
