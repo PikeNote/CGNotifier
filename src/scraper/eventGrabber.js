@@ -4,12 +4,14 @@ const { DateTime } = require("luxon");
 const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder,  updateMessage} = require('../bot/utility/eventSender')
-const {loginToCG, grabDescTags} = require('../scraper/puppeteerLogin');
+const {loginToCG, grabDescTags, createBrowser} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
 
 
 // Initalize dotenv environent
 require('dotenv').config()
+
+let browser;
 
 // Save me wtf is this
 const regexMultiDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm;
@@ -129,6 +131,7 @@ async function getEventDataRQ(force = false) {
        console.log('Fetched event data!')
 
       let cancelUpdate = false; 
+      browser = await createBrowser();
       for(const [key, event] of Object.entries(response.data)) {
         const fields = event["fields"].split(',').filter(n => n);
 
@@ -171,7 +174,7 @@ async function getEventDataRQ(force = false) {
                 continue;
             }
 
-            let eventDesc = await grabDescTags("https://community.case.edu/placeholder" + temp_data["eventUrl"]);
+            let eventDesc = await grabDescTags("https://community.case.edu/placeholder" + temp_data["eventUrl"], browser);
             if(eventDesc == null){
                 eventDesc = [temp_data["eventCategory"],"https://community.case.edu/placeholder" + temp_data["eventUrl"],"https://community.case.edu/placeholder" + temp_data["eventUrl"]]
             }
@@ -275,8 +278,9 @@ async function dateConverter(input) {
         if(multiDateMatch.length > 1) {
             const matchOne = multiDateMatch[0];
             const matchTwo = multiDateMatch[1];
+
             return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a').toUTC().toISO(),
-            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[7]} ${matchTwo[8] ?? '00'} ${matchTwo[9]}`, 'MMM d yyyy h m a').toUTC().toISO()];
+            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[4]} ${matchTwo[5] ?? '00'} ${matchTwo[6]}`, 'MMM d yyyy h m a').toUTC().toISO()];
         } else{
             return [];
         }
@@ -300,6 +304,10 @@ async function messagePruner() {
 }
 
 async function postnewTrackers() {
+    if(browser){
+        browser.close();
+        browser = null;
+    }
     console.log('Updating trackers...')
     let rows = await getAllTrackers();
     console.log('Going through all channels...')

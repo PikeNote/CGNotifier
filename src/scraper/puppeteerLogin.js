@@ -2,13 +2,12 @@ const puppeteer = require("puppeteer-extra");
 const fs = require('fs');
 const os = require('os');
 const {getVerificationCode} = require('./gmailHandler')
-let browser;
-
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const dotenv = require('dotenv');
 puppeteer.use(StealthPlugin())
 
 
-require('dotenv').config();
+dotenv.config();
 
 loginToCG();
 
@@ -70,6 +69,14 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 }
 */
 
+const reloadEnv = () => {
+  const envConfig = dotenv.parse(fs.readFileSync('.env'))
+
+  for (const key in envConfig) {
+      process.env[key] = envConfig[key]
+  }
+}
+
 function processCookies() {
   let cookies = process.env.COOKIE_HEADER;
   let cookies_array = [];
@@ -91,30 +98,52 @@ function processCookies() {
   return cookies_array;
 }
 
-async function loginToCG(callback=(()=>{}), justLogin=false) {
-  let cookies = processCookies();
+async function createBrowser() {
+  return new Promise(async(resolve,reject) => {
+    try {
+      
+      let cookies = processCookies();
 
-  if(browser == null) {
-    browser = await puppeteer.launch({
-      headless: true,
-      devtools: false,
-      args: ['--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-infobars',
-            '--window-position=0,0',
-            '--ignore-certifcate-errors',
-            '--ignore-certifcate-errors-spki-list',
-            '--user-agent="Mozilla/5.0 (Windows; Windows NT 10.5; x64) Gecko/20130401 Firefox/69.1"']
-    });
+      let browser = await puppeteer.launch({
+        headless: true,
+        devtools: false,
+        args: ['--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-infobars',
+              '--window-position=0,0',
+              '--ignore-certifcate-errors',
+              '--ignore-certifcate-errors-spki-list',
+              '--user-agent="Mozilla/5.0 (Windows; Windows NT 10.5; x64) Gecko/20130401 Firefox/69.1"']
+      });
+
+      const page = await browser.newPage();
+
+      await page.setCookie(...cookies);
+
+      resolve(browser);
+    } catch (e) {
+      reject(e);
+    }
+
+
+  })
+  
+}
+
+async function loginToCG(callback=(()=>{}), justLogin=false, browser=null) {
+  
+
+  if(!browser) {
+    browser = await createBrowser();
+    if(!browser){
+      callback(false);
+      return;
+    }
   }
 
   console.log("Logging into CampusGroups")
   // Launch the browser and open a new blank page
   const page = await browser.newPage();
-
-  console.log(cookies);
-  await page.setCookie(...cookies);
-  console.log('Cookies set!')
 
   // Navigate the page to a URL.
   await page.goto('https://community.case.edu/', {timeout: 0}).catch((e) => {
@@ -132,7 +161,7 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
 
   if(!url_page.includes('https://community.case.edu/home_login')) {
     console.log("Already logged in; Current URL: " + url_page);
-    page.close();
+    await browser.close();
     callback(true);
     return;
   }
@@ -178,9 +207,10 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
   }
 
   await page.waitForNetworkIdle();
-  await page.waitForSelector('.list-unstyled > li:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > h2:nth-child(1)').catch((err) => {
+  await page.waitForSelector('.list-unstyled > li:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > h2:nth-child(1)').catch(async(err) => {
     console.log("Login failed.");
     callback(false);
+    await browser.close();
     return;
   })
 
@@ -198,9 +228,10 @@ async function loginToCG(callback=(()=>{}), justLogin=false) {
     process.env.COOKIE_HEADER = updatedCookie;
 
     require('dotenv').config({ override: true });
+    reloadEnv();
   }
   console.log("Login Yipieee")
-  await page.close();
+  await browser.close();
   callback(true);
 }
 
@@ -240,21 +271,14 @@ function setEnvValue(key, value) {
     fs.writeFileSync(".env", ENV_VARS.join(os.EOL));
   }
 
-async function grabDescTags(url) {
+async function grabDescTags(url, browser=null) {
   console.log("Grabbing info from: " + url);
 
-  if(browser == null) {
-    browser = await puppeteer.launch({
-      headless: true,
-      devtools: false,
-      args: ['--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-infobars',
-        '--window-position=0,0',
-        '--ignore-certifcate-errors',
-        '--ignore-certifcate-errors-spki-list',
-        '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"']
-    });
+  if(!browser) {
+    await createBrowser();
+    if(!browser){
+      return null;
+    }
   }
 
   const page = await browser.newPage();
@@ -272,8 +296,13 @@ async function grabDescTags(url) {
   const url_page = await page.url();
 
   if(!url_page.includes('https://community.case.edu/otp_signup')) {
+    let test = await page.url();
+
     try{
-      await page.waitForSelector('.rsvp__event-tags')
+      await page.waitForSelector('.rsvp__event-tags').catch(e => {
+        console.warn(e);
+        return null;
+      })
       
 
 
@@ -285,6 +314,7 @@ async function grabDescTags(url) {
 
       let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
       const new_url = await page.url();
+
       await page.close();
       desc = desc.split('\n')
       desc.pop();
@@ -295,16 +325,17 @@ async function grabDescTags(url) {
       return null;
     }
   } else {
-    let succ = false;
-    await loginToCG((success) => succ = success, true);
     await page.close();
+    let succ = false;
+    await loginToCG((success) => succ = success, true, browser);
 
     if(succ){ 
-      return grabDescTags(url);
+      return grabDescTags(url, browser);
     } else {
       return null;
     }
-     
+    
+
     
     
   }
@@ -312,4 +343,4 @@ async function grabDescTags(url) {
   
 }
 
-module.exports = {loginToCG, grabDescTags}
+module.exports = {loginToCG, grabDescTags, createBrowser}
