@@ -193,7 +193,13 @@ async function loginToCG(callback=(()=>{}), justLogin=false, browser=null) {
   
     if(verificationCode != 0) {
       await page.type('#otp', verificationCode);
+      console.log("Typing OTP: " + verificationCode)
       await page.click('#otb_button');
+    }  else {
+      console.log("Login failed.");
+      callback(false);
+      await browser.close();
+      return;
     }
   
     await page.waitForNetworkIdle();
