@@ -131,8 +131,6 @@ async function createBrowser() {
 }
 
 async function loginToCG(callback=(()=>{}), justLogin=false, browser=null) {
-  
-
   if(!browser) {
     browser = await createBrowser();
     if(!browser){
@@ -141,98 +139,94 @@ async function loginToCG(callback=(()=>{}), justLogin=false, browser=null) {
     }
   }
 
-  console.log("Logging into CampusGroups")
-  // Launch the browser and open a new blank page
-  const page = await browser.newPage();
-
-  // Navigate the page to a URL.
-  await page.goto('https://community.case.edu/', {timeout: 0}).catch((e) => {
-    console.warn(e)
-  });
-
-  await page.setCacheEnabled(false).catch((e) => {
-    console.warn(e)
-  });
-
-  await page.waitForNetworkIdle();
-
-
-  const url_page = await page.url();
-
-  if(!url_page.includes('https://community.case.edu/home_login')) {
-    console.log("Already logged in; Current URL: " + url_page);
+  try {
+  
+    console.log("Logging into CampusGroups")
+    // Launch the browser and open a new blank page
+    const page = await browser.newPage();
+  
+    // Navigate the page to a URL.
+    await page.goto('https://community.case.edu/', {timeout: 0});
+  
+    await page.setCacheEnabled(false).catch();
+  
+    await page.waitForNetworkIdle();
+  
+  
+    const url_page = await page.url();
+  
+    if(!url_page.includes('https://community.case.edu/home_login')) {
+      console.log("Already logged in; Current URL: " + url_page);
+      await browser.close();
+      callback(true);
+      return;
+    }
+  
+    console.log('Going to login page...')
+    await page.goto('https://community.case.edu/login_only', {timeout: 0});
+  
+    await page.waitForNetworkIdle();
+  
+    await page.waitForSelector('#login_email');
+    await delay(1000);
+    
+    await page.click("#a-all-others-sign-in-below");
+    
+    await page.type("#login_email", process.env.GMAIL_EMAIL);
+    await page.click("#remember_me");
+  
+    console.log('Filled out data and logging in')
+    await page.click("#loginButton");
+  
+    
+  
+    await page.waitForNavigation()
+  
+    await page.waitForNetworkIdle();
+  
+    await page.waitForSelector('#otp');
+    await page.waitForSelector('#otb_button');
+    
+    console.log('Awaiting OTP...')
+    
+    let verificationCode = await getVerificationCode(3000);
+  
+    if(verificationCode != 0) {
+      await page.type('#otp', verificationCode);
+      await page.click('#otb_button');
+    }
+  
+    await page.waitForNetworkIdle();
+    await page.waitForSelector('.list-unstyled > li:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > h2:nth-child(1)').catch(async(err) => {
+      console.log("Login failed.");
+      callback(false);
+      await browser.close();
+      return;
+    })
+  
+    if(!justLogin) {
+      const client = await page.target().createCDPSession();
+      const cookies = (await client.send('Network.getAllCookies')).cookies;
+      let updatedCookieStr = [];
+      for (let i=0; i<cookies.length; i++) {
+        updatedCookieStr.push(cookies[i]['name'] + "=" + cookies[i]['value']);
+      }
+  
+      const updatedCookie = updatedCookieStr.join(';')
+  
+      setEnvValue('COOKIE_HEADER', updatedCookie);
+      process.env.COOKIE_HEADER = updatedCookie;
+  
+      require('dotenv').config({ override: true });
+      reloadEnv();
+    }
+    console.log("Login Yipieee")
     await browser.close();
     callback(true);
-    return;
-  }
-
-  console.log('Going to login page...')
-  await page.goto('https://community.case.edu/login_only', {timeout: 0}).catch((e) => {
-    console.warn(e)
-  });
-
-  await page.waitForNetworkIdle();
-
-  await page.waitForSelector('#login_email').catch((e) => {
-    console.warn(e)
-  });
-  await delay(1000);
-  
-  await page.click("#a-all-others-sign-in-below").catch((e) => {
-    console.warn(e)
-  });
-  
-  await page.type("#login_email", process.env.GMAIL_EMAIL);
-  await page.click("#remember_me");
-
-  console.log('Filled out data and logging in')
-  await page.click("#loginButton");
-
-  
-
-  await page.waitForNavigation()
-
-  await page.waitForNetworkIdle();
-
-  await page.waitForSelector('#otp');
-  await page.waitForSelector('#otb_button');
-  
-  console.log('Awaiting OTP...')
-  
-  let verificationCode = await getVerificationCode(3000);
-
-  if(verificationCode != 0) {
-    await page.type('#otp', verificationCode);
-    await page.click('#otb_button');
-  }
-
-  await page.waitForNetworkIdle();
-  await page.waitForSelector('.list-unstyled > li:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > h2:nth-child(1)').catch(async(err) => {
-    console.log("Login failed.");
-    callback(false);
+  } catch {
     await browser.close();
-    return;
-  })
-
-  if(!justLogin) {
-    const client = await page.target().createCDPSession();
-    const cookies = (await client.send('Network.getAllCookies')).cookies;
-    let updatedCookieStr = [];
-    for (let i=0; i<cookies.length; i++) {
-      updatedCookieStr.push(cookies[i]['name'] + "=" + cookies[i]['value']);
-    }
-
-    const updatedCookie = updatedCookieStr.join(';')
-
-    setEnvValue('COOKIE_HEADER', updatedCookie);
-    process.env.COOKIE_HEADER = updatedCookie;
-
-    require('dotenv').config({ override: true });
-    reloadEnv();
+    callback(false);
   }
-  console.log("Login Yipieee")
-  await browser.close();
-  callback(true);
 }
 
 function delay(time) {
