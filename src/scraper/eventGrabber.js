@@ -6,7 +6,7 @@ const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMess
 const {embedBuilder,  updateMessage} = require('../bot/utility/eventSender')
 const {loginToCG, grabDescTags, createBrowser} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
-
+let updateCount = 0;
 
 // Initalize dotenv environent
 require('dotenv').config()
@@ -170,9 +170,12 @@ async function getEventDataRQ(force = false) {
 
             const convertedDate = await dateConverter(temp_data["eventDates"]);
             // Skip old events  
-            if(new Date(convertedDate) < new Date() || (eventChk.length > 0)) {
+            if((new Date(convertedDate) < new Date() || (eventChk.length > 0)) && updateCount < 3 && !force) {
+                updateCount++;
                 continue;
             }
+
+            updateCount = 0;
 
             let eventDesc = await grabDescTags("https://community.case.edu/placeholder" + temp_data["eventUrl"], browser);
             if(eventDesc == null){

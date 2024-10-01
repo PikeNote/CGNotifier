@@ -3,8 +3,11 @@ const {DateTime, Settings} = require('luxon');
 const { removeMessage } = require('../../scraper/sqliteHelper');
 
 function embedBuilder(queryResults) {
-    let startString = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-	let endString = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    let startTimeISO = DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York");
+    let endTimeISO = DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York");
+
+    let startString = startTimeISO.toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+	let endString = endTimeISO.toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     let color = "#00b0f4"
     let liveStatus = false;
     let eventName = queryResults["eventName"];
@@ -66,7 +69,7 @@ function embedBuilder(queryResults) {
         },
         {
             name: "🗓️ Add to Calendar",
-            value: `[Calendar Link](` + encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,350).replace(/[!'()*]/g, function(c) {return '%' + c.charCodeAt(0).toString(16);}) + "..."}&dates=${DateTime.fromISO(queryResults["start_time"]).setZone("America/New_York").toISO({ format: 'basic'})}/${DateTime.fromISO(queryResults["end_time"]).setZone("America/New_York").toISO({ format: 'basic' })}&ctz=America/New_York&location=${queryResults["eventLocation"]}`) + ')'
+            value: `[Calendar Link](` + encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,350).replace(/[!'()*]/g, function(c) {return '%' + c.charCodeAt(0).toString(16);}) + "..."}&dates=${startTimeISO.toISO({ format: 'basic'})}/${endTimeISO.toISO({ format: 'basic' })}&location=${queryResults["eventLocation"]}`) + ')'
         }
     )
     .setColor(color)
