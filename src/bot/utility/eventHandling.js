@@ -16,8 +16,8 @@ async function postEvent(guild, event, reason) {
 
     await event_manager.create({
         name: event['eventName'],
-        scheduledStartTime: DateTime.fromISO(event['start_time']).setZone("America/New_York").toJSDate(),
-        scheduledEndTime: DateTime.fromISO(event['end_time']).setZone("America/New_York").toJSDate(),
+        scheduledStartTime: DateTime.fromISO(event['start_time']).toJSDate(),
+        scheduledEndTime: DateTime.fromISO(event['end_time']).toJSDate(),
         description: event['eventDesc'].slice(0, 1000),
         image: image,
         reason: reason,

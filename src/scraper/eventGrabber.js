@@ -274,16 +274,16 @@ async function dateConverter(input) {
 
     if(singleDayMatch.length > 0) {
         const singleMatch = singleDayMatch[0]
-        return [DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5] ?? '00'} ${singleMatch[6]}`, 'MMM d yyyy h m a').toUTC().toISO(),
-        DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[7]} ${singleMatch[8] ?? '00'} ${singleMatch[9]}`, 'MMM d yyyy h m a').toUTC().toISO()];
+        return [DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[4]} ${singleMatch[5] ?? '00'} ${singleMatch[6]}`, 'MMM d yyyy h m a', {zone:'America/New_York'}).toUTC().toISO(),
+        DateTime.fromFormat(`${singleMatch[1]} ${singleMatch[2]} ${singleMatch[3]} ${singleMatch[7]} ${singleMatch[8] ?? '00'} ${singleMatch[9]}`, 'MMM d yyyy h m a', {zone:'America/New_York'}).toUTC().toISO()];
     } else {
         const multiDateMatch = [...input.matchAll(regexMultiDate)];
         if(multiDateMatch.length > 1) {
             const matchOne = multiDateMatch[0];
             const matchTwo = multiDateMatch[1];
 
-            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a').toUTC().toISO(),
-            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[4]} ${matchTwo[5] ?? '00'} ${matchTwo[6]}`, 'MMM d yyyy h m a').toUTC().toISO()];
+            return [DateTime.fromFormat(`${matchOne[1]} ${matchOne[2]} ${matchOne[3]} ${matchOne[4]} ${matchOne[5] ?? '00'} ${matchOne[6]}`, 'MMM d yyyy h m a', {zone:'America/New_York'}).toUTC().toISO(),
+            DateTime.fromFormat(`${matchTwo[1]} ${matchTwo[2]} ${matchTwo[3]} ${matchTwo[4]} ${matchTwo[5] ?? '00'} ${matchTwo[6]}`, 'MMM d yyyy h m a', {zone: 'America/New_York'}).toUTC().toISO()];
         } else{
             return [];
         }
