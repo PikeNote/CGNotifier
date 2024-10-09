@@ -9,8 +9,8 @@ const client = new ImapFlow({
   port: 993,
   secure: true,
   auth: {
-      user: myMail,
-      pass: myPwd
+      user: process.env.GMAIL_EMAIL,
+      pass: process.env.GMAIL_APP_PASSWORD
   },
   logger: false
 });
