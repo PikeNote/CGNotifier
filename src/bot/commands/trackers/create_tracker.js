@@ -6,6 +6,12 @@ module.exports = {
 		.setName('create_tracker')
 		.setDescription('Post new future events and live update events based on tags and club names within a time period')
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+		.addStringOption(option => {
+			option.setName('tracker_name')
+			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
+			.setRequired(true)
+			.setMaxLength(20);
+		})
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("Channel to post the events")
@@ -50,15 +56,17 @@ module.exports = {
 	async execute(interaction) {
 		if(interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
 			const channelPost = interaction.options.getChannel("channel");
+			const trackerName = interaction.options.getString("tracker_name");
 			let clubName = interaction.options.getString("club_name") ?? '';
 			clubName = clubName.trim();
 			const eventTag = interaction.options.getString("tags") ?? '';
 			const days = interaction.options.getInteger("number_of_days") ?? 10
 			const postEvent = interaction.options.getBoolean('post_event') ?? false;
+			
 
 			interaction.reply({content: "Adding new tracker... (events will be posted next update)", ephemeral: true})
 
-			insertTracker(interaction.guild.id, channelPost.id, clubName, days, eventTag, postEvent ? 1 : 0);
+			insertTracker(trackerName, interaction.guild.id, channelPost.id, clubName, days, eventTag, postEvent ? 1 : 0);
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}

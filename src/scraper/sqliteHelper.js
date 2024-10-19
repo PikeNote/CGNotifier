@@ -56,7 +56,8 @@ const initMessageTable = `
 const serverSettings = `
     CREATE TABLE IF NOT EXISTS trackers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        guildID TEXT NO NULL,
+        trackerName TEXT NOT NULL,
+        guildID TEXT NOT NULL,
         channelID TEXT NOT NULL,
         clubFilter TEXT NOT NULL,
         daysPost TEXT NOT NULL,
@@ -193,9 +194,10 @@ function insertUpdateMessage(msgID, chnID, eventID, data, expiryDate, liveStatus
     )
 }
 
-function insertTracker(guildID, chnID, clubFilter, days, tagFilter, postEvent) {
-    db.run(`INSERT INTO trackers (guildID, channelID, clubFilter, daysPost, tagFilter, postEvent) VALUES (?, ?, ?, ?, ?, ?);`,
-        [guildID, chnID, clubFilter, days, tagFilter, postEvent]
+function insertTracker(trackerName, guildID, chnID, clubFilter, days, tagFilter, postEvent) {
+
+    db.run(`INSERT INTO trackers (trackerName, guildID, channelID, clubFilter, daysPost, tagFilter, postEvent) VALUES (?, ?, ?, ?, ?, ?);`,
+        [trackerName, guildID, chnID, clubFilter, days, tagFilter, postEvent]
     )
     setupTrackerIDs();
 }
@@ -260,7 +262,15 @@ async function setupTrackerIDs() {
     activeTrackerIDs = [];
     let trackers = await db.all('SELECT * FROM trackers')
     for(let i=0; i<trackers.length; i++) {
-        activeTrackerIDs.push({"id":`${trackers[i]["id"]}`, desc:`ID: ${trackers[i]["id"]} ┃┃ Channel: ${trackers[i]["channelID"]}`, guildID:trackers[i]["guildID"], channelID: trackers[i]["channelID"]});
+        activeTrackerIDs.push(
+            {
+                "id":`${trackers[i]["id"]}`, 
+                name: trackers[i]["trackerName"], 
+                desc:`ID: ${trackers[i]["id"]} ┃┃ Name: ${trackers[i]["trackerName"]}`, 
+                guildID: trackers[i]["guildID"], 
+                channelID: trackers[i]["channelID"]
+            }
+        );
     }
     
 }

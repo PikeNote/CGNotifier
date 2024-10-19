@@ -12,6 +12,11 @@ module.exports = {
 			.setRequired(true)
 			.setAutocomplete(true)
 		)
+		.addStringOption(option => {
+			option.setName('tracker_name')
+			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
+			.setMaxLength(20);
+		})
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("New channel to post the events")
@@ -65,6 +70,7 @@ module.exports = {
 			const eventTag = interaction.options.getString("tags");
 			const days = interaction.options.getInteger("number_of_days")
 			const postEvent = interaction.options.getBoolean('post_event');
+			const trackerName = interaction.options.getString("tracker_name")
 
 			let choices = getTrackerIDs().filter(choice => choice.id==data.$id);
 
@@ -95,6 +101,10 @@ module.exports = {
 
 			if(postEvent) {
 				updatedFields.push(`postEvent=${postEvent ? 1 : 0}`)
+			}
+
+			if(trackerName) {
+				updatedFields.push(`trackerName=${trackerName}`)
 			}
 
 			interaction.reply({content: "Updated your tracker!", ephemeral: true})
