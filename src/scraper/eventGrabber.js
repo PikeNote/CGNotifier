@@ -351,7 +351,9 @@ async function processNotifications() {
             
             if(user != null && event.length != 0) {
                 event = event[0];
-                user.send(`${event['eventName']} is starting in 30 minutes! (Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}`).catch(e => [
+                user.send(`**${event['eventName']}** is starting in 30 minutes!\n(Start time: ${DateTime.fromISO(event['start_time']).setZone("America/New_York").toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })})\n${event['eventUrl']}\n
+                    Event Location: ${event['eventLocation']}
+                `).catch(e => [
 
                 ])
 
