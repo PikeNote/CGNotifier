@@ -12,8 +12,8 @@ module.exports = {
             let fields = [];
             for(let i=0; i<rows.length; i++) {
                 fields.push({
-                    name: `ID: ${rows[i]["id"]}`,
-                    value: `Channel: <#${rows[i]["channelID"]}> ┃┃ Tag Filter: ${rows[i]["tagFilter"]} ┃┃ Club Filter: ${rows[i]["clubFilter"]} ┃┃ Days To Post: ${rows[i]["daysPost"]}`,
+                    name: `Name: ${rows[i]["trackerName"]}`,
+                    value: `ID: ${rows[i]["id"]} ┃┃ Channel: <#${rows[i]["channelID"]}> ┃┃ Tag Filter: ${rows[i]["tagFilter"]} ┃┃ Club Filter: ${rows[i]["clubFilter"]} ┃┃ Days To Post: ${rows[i]["daysPost"]}`,
                     inline: false
                 })
             }
@@ -23,7 +23,7 @@ module.exports = {
                 .setTitle("Current Server Trackers")
                 .setColor("#FFFF00")
                 .setFooter({
-                    text: "CG Helper | Made with Caffiene ",
+                    text: "CG Helper | Made with Caffiene ☕ ",
                     iconURL: "https://images.squarespace-cdn.com/content/v1/515eba28e4b0ecbdd5ac1a2a/1584457021090-RSC1ZPF45R02BL6GTX2K/CG_Blue_Profile+Photo.png",
                 })
                 .setTimestamp()

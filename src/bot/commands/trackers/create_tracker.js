@@ -44,7 +44,11 @@ module.exports = {
 
 		switch(focusedOption.name) {
 			case 'club_name':
-				filtered = getClubList().filter(club => club.toLowerCase().startsWith(focusedOption.value.toLowerCase())).slice(0,24).map(choice => ({ name: choice, value: choice }));
+				filtered = getClubList().filter(
+					club => club.toLowerCase().startsWith(focusedOption.value.split(',').pop().trim().toLowerCase())
+				).slice(0,24).map(choice => 
+					({ name: choice, value: choice }) 
+				);
 				break;
 		}
 
