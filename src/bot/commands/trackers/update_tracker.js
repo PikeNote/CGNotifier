@@ -12,11 +12,11 @@ module.exports = {
 			.setRequired(true)
 			.setAutocomplete(true)
 		)
-		.addStringOption(option => {
+		.addStringOption(option =>
 			option.setName('tracker_name')
 			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
-			.setMaxLength(20);
-		})
+			.setMaxLength(20)
+		)
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("New channel to post the events")
