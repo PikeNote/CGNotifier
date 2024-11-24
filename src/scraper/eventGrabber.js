@@ -169,8 +169,13 @@ async function getEventDataRQ(force = false) {
             let eventChk = await getEvent(temp_data["eventId"]);
 
             const convertedDate = await dateConverter(temp_data["eventDates"]);
+            
+            // Handle events that don't have a date;
+            if(convertedDate[0] == null) {
+                continue;
+            }
             // Skip old events  
-            if((new Date(convertedDate) < new Date() || (eventChk.length > 0)) && updateCount < 3 && !force) {
+            if((new Date(convertedDate) < new Date() || (eventChk.length > 0)) && updateCount < 3 && !force ) {
                 updateCount++;
                 continue;
             }
