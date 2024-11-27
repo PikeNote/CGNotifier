@@ -53,7 +53,7 @@ module.exports = {
 		switch(focusedOption.name) {
 			case 'tracker_id':
 				choices = getTrackerIDs();
-				filtered = choices.filter(choice => choice.id.startsWith(focusedOption.value) && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
+				filtered = choices.filter(choice => (choice.id.startsWith(focusedOption.value) || choice.name.startsWith(focusedOption.value))  && choice.guildID == interaction.guildId).slice(0,24).map(choice => ({ name: choice.desc, value: choice.id }));
 				break;
 			case 'club_name':
 				filtered = getClubList().filter(
