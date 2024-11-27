@@ -66,15 +66,42 @@ module.exports = {
 			const trackerName = interaction.options.getString("tracker_name");
 			let clubName = interaction.options.getString("club_name") ?? '';
 			clubName = clubName.trim();
-			let clubCustomName = interaction.options.getString("custom_club_name") ?? clubName;
+			let clubCustomName = interaction.options.getString("custom_club_name")
 			const eventTag = interaction.options.getString("tags") ?? '';
 			const days = interaction.options.getInteger("number_of_days") ?? 10
 			const postEvent = interaction.options.getBoolean('post_event') ?? false;
 			
+			let clubList = getClubList();
 
-			interaction.reply({content: "Adding new tracker... (events will be posted next update)", ephemeral: true})
+			let invalidClubList = [];
+			if(clubCustomName) {
+				let clubCustomList = clubCustomName.trim().toLowerCase().split(',');
 
-			insertTracker(trackerName, interaction.guild.id, channelPost.id, clubCustomName, days, eventTag, postEvent ? 1 : 0);
+				for (let i=clubCustomList.length -1; i>=0; i--) {
+					let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i]);
+					if(clubExistCheck.length == 0) {
+						invalidClubList.append(clubCustomList[i]);
+						clubCustomList.splice(i, 1);
+					} else {
+						clubCustomList[i] = clubExistCheck[0];
+					}
+				}
+			} else {
+				clubCustomName=clubName;
+			}
+
+			if(clubCustomList.length == 0) {
+				interaction.reply({content: "All the clubs you inserted are invalid! Tracker is not added.", ephemeral:true});
+			} else {
+				let contentMessage = "Added new tracker! (events will be posted next update)";
+				if(invalidClubList.length != 0) {
+					contentMessage += "\nCustom clubs removed as not found in the database: " + invalidClubList.join(', ');
+				}
+				interaction.reply({content: "Added new tracker! (events will be posted next update)", ephemeral: true})
+
+				insertTracker(trackerName, interaction.guild.id, channelPost.id, clubCustomName, days, eventTag, postEvent ? 1 : 0);
+			}
+			
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}

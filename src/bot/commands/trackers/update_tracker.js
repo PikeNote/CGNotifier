@@ -81,6 +81,8 @@ module.exports = {
 			const postEvent = interaction.options.getBoolean('post_event');
 			const trackerName = interaction.options.getString("tracker_name")
 
+			let invalidClubList = [];
+
 			let choices = getTrackerIDs().filter(choice => choice.id==data.$id);
 
 			if(choices[0]['guildID'] != interaction.guild.id) {
@@ -94,7 +96,25 @@ module.exports = {
 			}
 
 			if(clubName || clubCustomName) {
-				clubCustomName = clubCustomName ?? clubName;
+
+				let clubList = getClubList();
+
+				if(clubCustomName) {
+					let clubCustomList = clubCustomName.trim().toLowerCase().split(',');
+	
+					for (let i=clubCustomList.length -1; i>=0; i--) {
+						let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i]);
+						if(clubExistCheck.length == 0) {
+							invalidClubList.append(clubCustomList[i]);
+							clubCustomList.splice(i, 1);
+						} else {
+							clubCustomList[i] = clubExistCheck[0];
+						}
+					}
+				} else {
+					clubCustomName=clubName;
+				}
+
 				updatedFields.push(`clubFilter=$clubFilter`);
 				data.$clubFilter=clubCustomName.trim();
 			}
@@ -117,7 +137,7 @@ module.exports = {
 				updatedFields.push(`trackerName=${trackerName}`)
 			}
 
-			interaction.reply({content: "Updated your tracker!", ephemeral: true})
+			interaction.reply({content: `Updated your tracker!${invalidClubList.length != 0 ? "\n" + "Clubs removed due to not being found in the database: " + invalidClubList.join(', ') : ""}`, ephemeral: true})
 
 			updateTracker(updatedFields, data)
 		} else {
