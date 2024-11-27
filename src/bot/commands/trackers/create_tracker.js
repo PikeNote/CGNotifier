@@ -6,12 +6,12 @@ module.exports = {
 		.setName('create_tracker')
 		.setDescription('Post new future events and live update events based on tags and club names within a time period')
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-		.addStringOption(option =>
+		.addStringOption(option => {
 			option.setName('tracker_name')
-				.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
-				.setRequired(true)
-				.setMaxLength(20)
-		)
+			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
+			.setRequired(true)
+			.setMaxLength(20);
+		})
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("Channel to post the events")
@@ -36,6 +36,10 @@ module.exports = {
 		.addBooleanOption(option =>
             option.setName('post_event')
             .setDescription('Whether you want the bot to automaticlly post to Discord events (Default: False)')
+		)
+		.addStringOption(option =>
+            option.setName('custom_club_name')
+			.setDescription("Comma seperated list of all clubs you'd like to only see posts from;")
 		),
 		
 	async autocomplete(interaction) {
@@ -44,15 +48,10 @@ module.exports = {
 
 		switch(focusedOption.name) {
 			case 'club_name':
-				let focusedText = focusedOption.value.split(',');
-				let lastOptionTyped = focusedText.pop();
-
-				focusedText=focusedText.join(', ');
-
 				filtered = getClubList().filter(
-					club => club.toLowerCase().startsWith(lastOptionTyped.trim().toLowerCase())
+					club => club.toLowerCase().startsWith(focusedOption.value.trim().toLowerCase())
 				).slice(0,24).map(choice => 
-					({ name: focusedText + ', ' + choice, value: focusedText + ', ' + choice }) 
+					({ name: choice, value: choice }) 
 				);
 				break;
 		}
@@ -68,6 +67,7 @@ module.exports = {
 			const trackerName = interaction.options.getString("tracker_name");
 			let clubName = interaction.options.getString("club_name") ?? '';
 			clubName = clubName.trim();
+			let clubCustomName = interaction.options.getString("custom_club_name") ?? clubName;
 			const eventTag = interaction.options.getString("tags") ?? '';
 			const days = interaction.options.getInteger("number_of_days") ?? 10
 			const postEvent = interaction.options.getBoolean('post_event') ?? false;
@@ -75,7 +75,7 @@ module.exports = {
 
 			interaction.reply({content: "Adding new tracker... (events will be posted next update)", ephemeral: true})
 
-			insertTracker(trackerName, interaction.guild.id, channelPost.id, clubName, days, eventTag, postEvent ? 1 : 0);
+			insertTracker(trackerName, interaction.guild.id, channelPost.id, clubCustomName, days, eventTag, postEvent ? 1 : 0);
 		} else {
 			interaction.reply({content: "You don't have permission to use this command!", ephemeral: true})
 		}

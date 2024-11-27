@@ -12,11 +12,11 @@ module.exports = {
 			.setRequired(true)
 			.setAutocomplete(true)
 		)
-		.addStringOption(option =>
+		.addStringOption(option => {
 			option.setName('tracker_name')
 			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
-			.setMaxLength(20)
-		)
+			.setMaxLength(20);
+		})
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("New channel to post the events")
@@ -40,6 +40,10 @@ module.exports = {
 		.addBooleanOption(option =>
             option.setName('post_event')
             .setDescription('Whether you want the bot to automaticlly post to Discord events (Default: False)')
+		)
+		.addStringOption(option =>
+            option.setName('custom_club_name')
+			.setDescription("Comma seperated list of all clubs you'd like to only see posts from;")
 		),
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
@@ -53,7 +57,7 @@ module.exports = {
 				break;
 			case 'club_name':
 				filtered = getClubList().filter(
-					club => club.toLowerCase().startsWith(focusedOption.value.split(',').pop().trim().toLowerCase())
+					club => club.toLowerCase().startsWith(focusedOption.value.trim().toLowerCase())
 				).slice(0,24).map(choice => 
 					({ name: choice, value: choice }) 
 				);
@@ -71,6 +75,7 @@ module.exports = {
 			let data = { $id: interaction.options.getInteger("tracker_id")};
 			const channelPost = interaction.options.getChannel("channel");
 			const clubName = interaction.options.getString("club_name");
+			let clubCustomName = interaction.options.getString("custom_club_name");
 			const eventTag = interaction.options.getString("tags");
 			const days = interaction.options.getInteger("number_of_days")
 			const postEvent = interaction.options.getBoolean('post_event');
@@ -88,9 +93,10 @@ module.exports = {
 				data.$channelID=channelPost.id;
 			}
 
-			if(clubName) {
+			if(clubName || clubCustomName) {
+				clubCustomName = clubCustomName ?? clubName;
 				updatedFields.push(`clubFilter=$clubFilter`);
-				data.$clubFilter=clubName.trim();
+				data.$clubFilter=clubCustomName.trim();
 			}
 
 			if(eventTag) {

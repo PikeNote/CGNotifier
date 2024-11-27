@@ -279,7 +279,7 @@ async function getUniqueClubs() {
     clubsList = [];
     let clubs = await db.all('SELECT DISTINCT clubName FROM events')
     for(let i=0; i<clubs.length; i++) {
-        clubsList.push(clubs[i]["clubName"])      
+        clubsList.push(clubs[i]["clubName"]);      
     }
     
 }
