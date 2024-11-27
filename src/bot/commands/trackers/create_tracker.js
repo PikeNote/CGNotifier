@@ -6,12 +6,12 @@ module.exports = {
 		.setName('create_tracker')
 		.setDescription('Post new future events and live update events based on tags and club names within a time period')
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-		.addStringOption(option => {
+		.addStringOption(option => 
 			option.setName('tracker_name')
-			.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
-			.setRequired(true)
-			.setMaxLength(20);
-		})
+				.setDescription("Name of the tracker to help distinguish it when you need to modify it! (Max Length: 20)")
+				.setRequired(true)
+				.setMaxLength(20)
+		)
 		.addChannelOption(option =>
 			option.setName('channel')
 				.setDescription("Channel to post the events")
@@ -41,7 +41,6 @@ module.exports = {
             option.setName('custom_club_name')
 			.setDescription("Comma seperated list of all clubs you'd like to only see posts from;")
 		),
-		
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
 		let filtered;
