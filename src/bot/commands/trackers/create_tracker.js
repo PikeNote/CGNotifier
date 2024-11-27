@@ -50,7 +50,7 @@ module.exports = {
 				filtered = getClubList().filter(
 					club => club.toLowerCase().startsWith(lastOptionTyped.trim().toLowerCase())
 				).slice(0,24).map(choice => 
-					({ name: choice, value: focusedText.push(choice).join(', ') }) 
+					({ name: choice, value: focusedText.join(', ') + ', ' + choice }) 
 				);
 				break;
 		}
