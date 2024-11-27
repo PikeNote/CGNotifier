@@ -47,10 +47,12 @@ module.exports = {
 				let focusedText = focusedOption.value.split(',');
 				let lastOptionTyped = focusedText.pop();
 
+				focusedText=focusedText.join(', ');
+
 				filtered = getClubList().filter(
 					club => club.toLowerCase().startsWith(lastOptionTyped.trim().toLowerCase())
 				).slice(0,24).map(choice => 
-					({ name: choice, value: focusedText.join(', ') + ', ' + choice }) 
+					({ name: focusedText + ', ' + choice, value: focusedText + ', ' + choice }) 
 				);
 				break;
 		}
