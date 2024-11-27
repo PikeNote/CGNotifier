@@ -80,7 +80,7 @@ module.exports = {
 				for (let i=clubCustomList.length -1; i>=0; i--) {
 					let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i]);
 					if(clubExistCheck.length == 0) {
-						invalidClubList.append(clubCustomList[i]);
+						invalidClubList.push(clubCustomList[i]);
 						clubCustomList.splice(i, 1);
 					} else {
 						clubCustomList[i] = clubExistCheck[0];
