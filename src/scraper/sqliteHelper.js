@@ -196,7 +196,7 @@ function insertUpdateMessage(msgID, chnID, eventID, data, expiryDate, liveStatus
 
 function insertTracker(trackerName, guildID, chnID, clubFilter, days, tagFilter, postEvent) {
 
-    db.run(`INSERT INTO trackers (trackerName, guildID, channelID, clubFilter, daysPost, tagFilter, postEvent) VALUES (?, ?, ?, ?, ?, ?);`,
+    db.run(`INSERT INTO trackers (trackerName, guildID, channelID, clubFilter, daysPost, tagFilter, postEvent) VALUES (?, ?, ?, ?, ?, ?, ?);`,
         [trackerName, guildID, chnID, clubFilter, days, tagFilter, postEvent]
     )
     setupTrackerIDs();
