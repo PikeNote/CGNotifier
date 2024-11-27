@@ -100,10 +100,10 @@ module.exports = {
 				let clubList = getClubList();
 
 				if(clubCustomName) {
-					let clubCustomList = clubCustomName.trim().toLowerCase().split(',');
+					let clubCustomList = clubCustomName.toLowerCase().split(',');
 	
 					for (let i=clubCustomList.length -1; i>=0; i--) {
-						let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i]);
+						let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i].trim());
 						if(clubExistCheck.length == 0) {
 							invalidClubList.push(clubCustomList[i]);
 							clubCustomList.splice(i, 1);
@@ -111,7 +111,7 @@ module.exports = {
 							clubCustomList[i] = clubExistCheck[0];
 						}
 					}
-					
+
 					clubCustomName = clubCustomList.join(', ');
 				} else {
 					clubCustomName=clubName;

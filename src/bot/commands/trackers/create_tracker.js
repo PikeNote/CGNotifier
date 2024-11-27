@@ -75,10 +75,10 @@ module.exports = {
 
 			let invalidClubList = [];
 			if(clubCustomName) {
-				let clubCustomList = clubCustomName.trim().toLowerCase().split(',');
+				let clubCustomList = clubCustomName.toLowerCase().split(',');
 
-				for (let i=clubCustomList.length -1; i>=0; i--) {
-					let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i]);
+				for (let i=clubCustomList.length-1; i>=0; i--) {
+					let clubExistCheck = clubList.filter(club => club.toLowerCase() == clubCustomList[i].trim());
 					if(clubExistCheck.length == 0) {
 						invalidClubList.push(clubCustomList[i]);
 						clubCustomList.splice(i, 1);
@@ -98,7 +98,7 @@ module.exports = {
 				if(invalidClubList.length != 0) {
 					contentMessage += "\nCustom clubs removed as not found in the database: " + invalidClubList.join(', ');
 				}
-				interaction.reply({content: "Added new tracker! (events will be posted next update)", ephemeral: true})
+				interaction.reply({content: contentMessage, ephemeral: true})
 
 				insertTracker(trackerName, interaction.guild.id, channelPost.id, clubCustomName, days, eventTag, postEvent ? 1 : 0);
 			}
