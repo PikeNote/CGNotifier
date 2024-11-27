@@ -86,11 +86,12 @@ module.exports = {
 						clubCustomList[i] = clubExistCheck[0];
 					}
 				}
+				clubCustomName=clubCustomList.join(', ');
 			} else {
 				clubCustomName=clubName;
 			}
 
-			if(clubCustomList.length == 0) {
+			if(clubCustomName == '') {
 				interaction.reply({content: "All the clubs you inserted are invalid! Tracker is not added.", ephemeral:true});
 			} else {
 				let contentMessage = "Added new tracker! (events will be posted next update)";

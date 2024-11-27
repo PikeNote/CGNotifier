@@ -111,6 +111,8 @@ module.exports = {
 							clubCustomList[i] = clubExistCheck[0];
 						}
 					}
+					
+					clubCustomName = clubCustomList.join(', ');
 				} else {
 					clubCustomName=clubName;
 				}
