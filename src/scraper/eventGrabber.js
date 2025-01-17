@@ -128,7 +128,7 @@ async function getEventDataRQ(force = false) {
         responseType: 'json',
         headers: axiosHeader
     }) .then (async (response) => {
-       console.log('Fetched event data!')
+       console.log('Fetched event data from ' + `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`)
 
       let cancelUpdate = false; 
       browser = await createBrowser();
