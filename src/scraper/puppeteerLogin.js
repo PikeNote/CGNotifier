@@ -274,6 +274,7 @@ function setEnvValue(key, value) {
 async function grabDescTags(url, browser=null) {
   console.log("Grabbing info from: " + url);
 
+  // Create a browser if it doesn't exist yet
   if(!browser) {
     await createBrowser();
     if(!browser){
@@ -288,6 +289,20 @@ async function grabDescTags(url, browser=null) {
   await page.goto(url, {timeout: 20000}).catch((res) => {
     return null;
   });
+  
+  await page.setJavaScriptEnabled(false); // You can fetch all informaiton from the page without JS; speeds up loading time
+
+  await page.setRequestInterception(true);
+    
+  // Disable CSS, fonts, and image loading as those are not any of the information we are looking for
+  page.on('request', (req) => {
+      if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
+          req.abort();
+      }
+      else {
+          req.continue();
+      }
+  });
 
   await page.waitForNetworkIdle().catch((res) => {
     return null;
@@ -295,36 +310,7 @@ async function grabDescTags(url, browser=null) {
   
   const url_page = await page.url();
 
-  if(!url_page.includes('https://community.case.edu/otp_signup')) {
-    let test = await page.url();
-
-    try{
-      await page.waitForSelector('.rsvp__event-tags').catch(e => {
-        console.warn(e);
-        return null;
-      })
-      
-
-
-      const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
-      let tagList = [];
-      for(let i=0; i<preProcessTaglist[0].length; i++) {
-        tagList.push(preProcessTaglist[0][i][0]);
-      }
-
-      let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
-      const new_url = await page.url();
-
-      await page.close();
-      desc = desc.split('\n')
-      desc.pop();
-      desc.shift();
-      desc = desc.join('\n');
-      return [tagList, desc, new_url]
-    } catch {
-      return null;
-    }
-  } else {
+  if(url_page.includes('https://community.case.edu/otp_signup')) {
     await page.close();
     let succ = false;
     await loginToCG((success) => succ = success, true, browser);
@@ -334,11 +320,36 @@ async function grabDescTags(url, browser=null) {
     } else {
       return null;
     }
+  }
+
+  // Wait for the event tags we want to grab
+  try{
+    await page.waitForSelector('.rsvp__event-tags').catch(e => {
+      console.warn(e);
+      return null;
+    })
     
 
-    
-    
+
+    const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
+    let tagList = [];
+    for(let i=0; i<preProcessTaglist[0].length; i++) {
+      tagList.push(preProcessTaglist[0][i][0]);
+    }
+
+    let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
+    const new_url = await page.url();
+
+    await page.close();
+    desc = desc.split('\n')
+    desc.pop();
+    desc.shift();
+    desc = desc.join('\n');
+    return [tagList, desc, new_url]
+  } catch {
+    return null;
   }
+  
   
   
 }
