@@ -180,9 +180,9 @@ async function getEventDataRQ(force = false) {
                     "start_time":convertedDate[0],
                     "end_time":convertedDate[1],
                     "eventName":temp_data["eventName"],
-                    "eventDesc": "https://community.case.edu/" + temp_data["eventUrl"],
+                    "eventDesc": "https://community.case.edu" + temp_data["eventUrl"],
                     "eventAttendees":temp_data["eventAttendees"],
-                    "eventUrl": "https://community.case.edu/" + temp_data["eventUrl"],
+                    "eventUrl": "https://community.case.edu" + temp_data["eventUrl"],
                     "eventLocation":temp_data["eventLocation"],
                     "eventPicture":("https://community.case.edu" + temp_data["eventPicture"]).replace('r2_image_upload','r3_image_upload'),
                     "eventPriceRange":temp_data["eventPriceRange"],
@@ -395,6 +395,7 @@ async function fetchEventDesc(event_id, secondAttempt=false) {
 
         return event_data;
     }).catch((e) => {
+        console.log("Error while fetching:" + e);
         return null;
     });
 }
