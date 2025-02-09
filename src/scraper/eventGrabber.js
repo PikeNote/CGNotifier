@@ -168,7 +168,7 @@ async function getEventDataRQ(force = false) {
         if(!events_storage.hasOwnProperty(temp_data["eventId"])) {
             let eventChk = await getEvent(temp_data["eventId"]);
 
-            const convertedDate = await dateConverter(temp_data["eventDates"]);
+            const convertedDate = await stringDateConverter(temp_data["eventDates"]);
             
             // Handle events that don't have a date;
             if(convertedDate[0] == null) {
@@ -182,24 +182,25 @@ async function getEventDataRQ(force = false) {
 
             updateCount = 0;
 
-            let eventDesc = await grabDescTags("https://community.case.edu/placeholder" + temp_data["eventUrl"], browser);
+            let event_data = await fetchEventDesc(temp_data["eventId"]);
+
             if(eventDesc == null){
-                eventDesc = [temp_data["eventCategory"],"https://community.case.edu/placeholder" + temp_data["eventUrl"],"https://community.case.edu/placeholder" + temp_data["eventUrl"]]
-            }
-            let event_data = {
-                "start_time":convertedDate[0],
-                "end_time":convertedDate[1],
-                "eventName":temp_data["eventName"],
-                "eventDesc":eventDesc[1],
-                "eventAttendees":temp_data["eventAttendees"],
-                "eventUrl": eventDesc[2],
-                "eventLocation":temp_data["eventLocation"],
-                "eventPicture":("https://community.case.edu" + temp_data["eventPicture"]).replace('r2_image_upload','r3_image_upload'),
-                "eventPriceRange":temp_data["eventPriceRange"],
-                "clubName":temp_data["clubName"],
-                "clubURL":"",
-                "eventId":temp_data["eventId"],
-                "eventCategory": JSON.stringify(eventDesc[0])
+                event_data = {
+                    "start_time":convertedDate[0],
+                    "end_time":convertedDate[1],
+                    "eventName":temp_data["eventName"],
+                    "eventDesc": "https://community.case.edu/" + temp_data["eventUrl"],
+                    "eventAttendees":temp_data["eventAttendees"],
+                    "eventUrl": "https://community.case.edu/" + temp_data["eventUrl"],
+                    "eventLocation":temp_data["eventLocation"],
+                    "eventPicture":("https://community.case.edu" + temp_data["eventPicture"]).replace('r2_image_upload','r3_image_upload'),
+                    "eventPriceRange":temp_data["eventPriceRange"],
+                    "clubName":temp_data["clubName"],
+                    "clubURL":"",
+                    "eventId":temp_data["eventId"],
+                    "eventCategory": JSON.stringify(temp_data["eventCategory"])
+                }
+                
             }
             events_storage[temp_data["eventId"]] = event_data;
         } else {
@@ -274,7 +275,7 @@ async function updateDB(force = false) {
 
 
 // Takes an input date given by the CG API to convert it to a DateTime;
-async function dateConverter(input) {
+async function stringDateConverter(input) {
     const singleDayMatch = [...input.matchAll(regexOneDate)];
 
     if(singleDayMatch.length > 0) {
@@ -376,6 +377,39 @@ async function processNotifications() {
         
         
     }
+}
+
+async function fetchEventDesc(event_id, secondAttempt=false) {
+    axios({
+        method: 'get',
+        url:  `https://community.case.edu/mobile_ws/v18/mobile_event_new?id=${event_id}`,
+        responseType: 'json',
+        headers: axiosHeader
+    }) .then (async (response) => { 
+        let eventTags = [];
+        for (let i=0; i< response['event_tags'].length; i++) {
+            eventTags.push(response['event_tags'][i]['name']);
+        }
+        let event_data = {
+            "start_time":response['event_start_utc'],
+            "end_time":response['event_end_utc'],
+            "eventName":response['eventName'],
+            "eventDesc":response['event_description'],
+            "eventAttendees":response['attendees_count'],
+            "eventUrl": `https://community.case.edu/rsvp?id=${response['event_id']}`,
+            "eventLocation":response['location'].split(',')[0],
+            "eventPicture":("https://community.case.edu" + response['photo_url']),
+            "eventPriceRange":"FREE",
+            "clubName":response['eventGroup']['groupName'],
+            "clubURL":"",
+            "eventId":response['event_id'],
+            "eventCategory": JSON.stringify(eventTags)
+        }
+
+        return event_data;
+    }).catch((e) => {
+        return null;
+    });
 }
 
 module.exports = {updateInfo};
