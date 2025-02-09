@@ -69,7 +69,7 @@ function embedBuilder(queryResults) {
         },
         {
             name: "🗓️ Add to Calendar",
-            value: `[Calendar Link](` + encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,350).replace(/[!'()*]/g, function(c) {return '%' + c.charCodeAt(0).toString(16);}) + "..."}&dates=${startTimeISO.toISO({ format: 'basic'})}/${endTimeISO.toISO({ format: 'basic' })}&location=${queryResults["eventLocation"]}`) + ')'
+            value: `[Calendar Link](` + encodeURI(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${queryResults["eventName"]}&details=${queryResults["eventDesc"].substring(0,300).replace(/[!'()*]/g, function(c) {return '%' + c.charCodeAt(0).toString(16);}) + "..."}&dates=${startTimeISO.toISO({ format: 'basic'})}/${endTimeISO.toISO({ format: 'basic' })}&location=${queryResults["eventLocation"]}`) + ')'
         }
     )
     .setColor(color)
