@@ -382,7 +382,7 @@ async function fetchEventDesc(event_id, secondAttempt=false) {
             let event_data = {
                 "start_time":responseData['event_start_utc'],
                 "end_time":responseData['event_end_utc'],
-                "eventName":responseData['eventName'],
+                "eventName":responseData['event_name'],
                 "eventDesc":responseData['event_description'],
                 "eventAttendees":responseData['attendees_count'],
                 "eventUrl": `https://community.case.edu/rsvp?id=${responseData['event_id']}`,
