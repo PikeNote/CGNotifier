@@ -373,23 +373,24 @@ async function fetchEventDesc(event_id, secondAttempt=false) {
         responseType: 'json',
         headers: axiosHeader
     }) .then (async (response) => { 
+        responseData = response.data;
         let eventTags = [];
-        for (let i=0; i< response['event_tags'].length; i++) {
-            eventTags.push(response['event_tags'][i]['name']);
+        for (let i=0; i< responseData['event_tags'].length; i++) {
+            eventTags.push(responseData['event_tags'][i]['name']);
         }
         let event_data = {
-            "start_time":response['event_start_utc'],
-            "end_time":response['event_end_utc'],
-            "eventName":response['eventName'],
-            "eventDesc":response['event_description'],
-            "eventAttendees":response['attendees_count'],
-            "eventUrl": `https://community.case.edu/rsvp?id=${response['event_id']}`,
-            "eventLocation":response['location'].split(',')[0],
-            "eventPicture":("https://community.case.edu" + response['photo_url']),
+            "start_time":responseData['event_start_utc'],
+            "end_time":responseData['event_end_utc'],
+            "eventName":responseData['eventName'],
+            "eventDesc":responseData['event_description'],
+            "eventAttendees":responseData['attendees_count'],
+            "eventUrl": `https://community.case.edu/rsvp?id=${responseData['event_id']}`,
+            "eventLocation":responseData['location'].split(',')[0],
+            "eventPicture":("https://community.case.edu" + responseData['photo_url']),
             "eventPriceRange":"FREE",
-            "clubName":response['eventGroup']['groupName'],
+            "clubName":responseData['eventGroup']['groupName'],
             "clubURL":"",
-            "eventId":response['event_id'],
+            "eventId":responseData['event_id'],
             "eventCategory": JSON.stringify(eventTags)
         }
 
