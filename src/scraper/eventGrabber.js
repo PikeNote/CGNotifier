@@ -4,14 +4,11 @@ const { DateTime } = require("luxon");
 const ical = require('node-ical');
 const {dbUpdate, getOldMessages, removeMessage, getAllTrackers, insertUpdateMessage, retrieveTagEvents, getPastDueNotifications, getEvent, deleteUserNotification, deleteTracker} = require('./sqliteHelper');
 const {embedBuilder,  updateMessage} = require('../bot/utility/eventSender')
-const {loginToCG, grabDescTags, createBrowser} = require('../scraper/puppeteerLogin');
+const {loginToCG} = require('../scraper/puppeteerLogin');
 const {postEvent} = require('../bot/utility/eventHandling');
-let updateCount = 0;
 
 // Initalize dotenv environent
 require('dotenv').config()
-
-let browser;
 
 // Save me wtf is this
 const regexMultiDate = /(?:[A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+) ([0-9]+)(?:[:]{0,1}?)(?:([0-9]+)?) ([A-Za-z]+)/gm;
@@ -131,7 +128,6 @@ async function getEventDataRQ(force = false) {
        console.log('Fetched event data from ' + `https://community.case.edu/mobile_ws/v17/mobile_events_list?range=0&limit=1000&filter4_contains=OR&timestamp=${new Date().getTime()}&filter8=${currentDate.day} ${currentDate.monthShort} ${currentDate.year}&filter4_notcontains=OR&order=undefined&search_word=&&1726272567036`)
 
       let cancelUpdate = false; 
-      browser = await createBrowser();
       for(const [key, event] of Object.entries(response.data)) {
         const fields = event["fields"].split(',').filter(n => n);
 
@@ -175,12 +171,9 @@ async function getEventDataRQ(force = false) {
                 continue;
             }
             // Skip old events  
-            if((new Date(convertedDate) < new Date() || (eventChk.length > 0)) && updateCount < 3 && !force ) {
-                updateCount++;
+            if(new Date(convertedDate) < new Date()) {
                 continue;
             }
-
-            updateCount = 0;
 
             let event_data = await fetchEventDesc(temp_data["eventId"]);
 
@@ -313,10 +306,6 @@ async function messagePruner() {
 }
 
 async function postnewTrackers() {
-    if(browser){
-        browser.close();
-        browser = null;
-    }
     console.log('Updating trackers...')
     let rows = await getAllTrackers();
     console.log('Going through all channels...')

@@ -11,64 +11,6 @@ dotenv.config();
 
 loginToCG();
 
-// Alternative CG login directly via SSO
-/*
-async function loginToCG(callback=(()=>{}), justLogin=false) {
-    if(browser == null) {
-      browser = await puppeteer.launch({
-        headless: true,
-        devtools: false,
-        args: ['--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-infobars',
-              '--window-position=0,0',
-              '--ignore-certifcate-errors',
-              '--ignore-certifcate-errors-spki-list',
-              '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"']
-      });
-    }
-
-    console.log("Logging into CampusGroups")
-    // Launch the browser and open a new blank page
-    const page = await browser.newPage();
-
-    // Navigate the page to a URL.
-    await page.goto('https://www.campusgroups.com/shibboleth/login?idp=cwru', {timeout: 0});
-
-    await page.setCacheEnabled(false);
-
-    await page.waitForNetworkIdle();
-
-    await page.waitForSelector('#username')
-    await page.waitForSelector('#password')
-    await page.waitForSelector('#login-submit')
-
-    await delay(1000);
-
-    await page.type("#username", process.env.LOGIN_USER);
-    await page.type("#password", process.env.LOGIN_PASSWORD);
-    await page.click("#login-submit");
-
-    await page.waitForNetworkIdle();
-
-    if(!justLogin) {
-      await page.waitForSelector('.list-unstyled > li:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)', { visible: true, timeout: 30000 }) .catch(error => {
-        console.log("Could not load webpage! May be duo?")
-      });
-
-      const client = await page.target().createCDPSession();
-      const cookies = (await client.send('Network.getAllCookies')).cookies;
-
-      const updatedCookie = `TGC=${cookies[0]['value']};CG.SessionID=${cookies[9]['value']}`
-
-      setEnvValue('COOKIE_HEADER', updatedCookie);
-    }
-    
-    await page.close();
-    callback(true);
-}
-*/
-
 const reloadEnv = () => {
   const envConfig = dotenv.parse(fs.readFileSync('.env'))
 
@@ -98,46 +40,24 @@ function processCookies() {
   return cookies_array;
 }
 
-async function createBrowser() {
-  return new Promise(async(resolve,reject) => {
-    try {
-      
-      let cookies = processCookies();
+async function loginToCG(callback=(()=>{}), justLogin=false) {
+  let cookies = processCookies();
 
-      let browser = await puppeteer.launch({
-        headless: true,
-        devtools: false,
-        args: ['--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-infobars',
-              '--window-position=0,0',
-              '--ignore-certifcate-errors',
-              '--ignore-certifcate-errors-spki-list',
-              '--user-agent="Mozilla/5.0 (Windows; Windows NT 10.5; x64) Gecko/20130401 Firefox/69.1"']
-      });
+  let browser = await puppeteer.launch({
+    headless: true,
+    devtools: false,
+    args: ['--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-infobars',
+          '--window-position=0,0',
+          '--ignore-certifcate-errors',
+          '--ignore-certifcate-errors-spki-list',
+          '--user-agent="Mozilla/5.0 (Windows; Windows NT 10.5; x64) Gecko/20130401 Firefox/69.1"']
+  });
 
-      const page = await browser.newPage();
+  const page = await browser.newPage();
 
-      await page.setCookie(...cookies);
-
-      resolve(browser);
-    } catch (e) {
-      reject(e);
-    }
-
-
-  })
-  
-}
-
-async function loginToCG(callback=(()=>{}), justLogin=false, browser=null) {
-  if(!browser) {
-    browser = await createBrowser();
-    if(!browser){
-      callback(false);
-      return;
-    }
-  }
+  await page.setCookie(...cookies);
 
   try {
   
@@ -271,87 +191,6 @@ function setEnvValue(key, value) {
     fs.writeFileSync(".env", ENV_VARS.join(os.EOL));
   }
 
-async function grabDescTags(url, browser=null) {
-  console.log("Grabbing info from: " + url);
-
-  // Create a browser if it doesn't exist yet
-  if(!browser) {
-    await createBrowser();
-    if(!browser){
-      return null;
-    }
-  }
-
-  const page = await browser.newPage();
-  
-
-  // Navigate the page to a URL.
-  await page.goto(url, {timeout: 20000}).catch((res) => {
-    return null;
-  });
-  
-  await page.setJavaScriptEnabled(false); // You can fetch all informaiton from the page without JS; speeds up loading time
-
-  await page.setRequestInterception(true);
-    
-  // Disable CSS, fonts, and image loading as those are not any of the information we are looking for
-  page.on('request', (req) => {
-      if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
-          req.abort();
-      }
-      else {
-          req.continue();
-      }
-  });
-
-  await page.waitForNetworkIdle().catch((res) => {
-    return null;
-  });
-  
-  const url_page = await page.url();
-
-  if(url_page.includes('https://community.case.edu/otp_signup')) {
-    await page.close();
-    let succ = false;
-    await loginToCG((success) => succ = success, true, browser);
-
-    if(succ){ 
-      return grabDescTags(url, browser);
-    } else {
-      return null;
-    }
-  }
-
-  // Wait for the event tags we want to grab
-  try{
-    await page.waitForSelector('.rsvp__event-tags').catch(e => {
-      console.warn(e);
-      return null;
-    })
-    
 
 
-    const preProcessTaglist = await page.evaluate(() => {return Array.from(document.querySelectorAll('.rsvp__event-tags')).map(el => Array.from(el.children).map(elm =>  Array.from(elm.children).map(elem => elem.innerText)))});
-    let tagList = [];
-    for(let i=0; i<preProcessTaglist[0].length; i++) {
-      tagList.push(preProcessTaglist[0][i][0]);
-    }
-
-    let desc = await page.evaluate(() => { return document.querySelector('#event_details > div:nth-child(1)').innerText});
-    const new_url = await page.url();
-
-    await page.close();
-    desc = desc.split('\n')
-    desc.pop();
-    desc.shift();
-    desc = desc.join('\n');
-    return [tagList, desc, new_url]
-  } catch {
-    return null;
-  }
-  
-  
-  
-}
-
-module.exports = {loginToCG, grabDescTags, createBrowser}
+module.exports = {loginToCG}
