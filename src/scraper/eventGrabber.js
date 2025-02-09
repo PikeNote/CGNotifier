@@ -162,8 +162,6 @@ async function getEventDataRQ(force = false) {
         }
 
         if(!events_storage.hasOwnProperty(temp_data["eventId"])) {
-            let eventChk = await getEvent(temp_data["eventId"]);
-
             const convertedDate = await stringDateConverter(temp_data["eventDates"]);
             
             // Handle events that don't have a date;
