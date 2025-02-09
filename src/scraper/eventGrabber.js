@@ -184,7 +184,7 @@ async function getEventDataRQ(force = false) {
 
             let event_data = await fetchEventDesc(temp_data["eventId"]);
 
-            if(eventDesc == null){
+            if(event_data == null){
                 event_data = {
                     "start_time":convertedDate[0],
                     "end_time":convertedDate[1],
