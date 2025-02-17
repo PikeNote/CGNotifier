@@ -25,6 +25,11 @@ function embedBuilder(queryResults) {
     if(queryResults["clubURL"] == '') {
         author = {name: queryResults["clubName"]}
     }
+
+    let eventTags = JSON.parse(queryResults["eventCategory"]).join(", ");
+    if(eventTags == '') {
+        eventTags = ' ';
+    }
     
     let embed = new EmbedBuilder()
     .setAuthor(author)
@@ -34,7 +39,7 @@ function embedBuilder(queryResults) {
     .addFields(
         {
             name: "Tags",
-            value: JSON.parse(queryResults["eventCategory"]).join(", "),
+            value: eventTags,
             inline: false
         },
         {
