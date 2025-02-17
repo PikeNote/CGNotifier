@@ -376,6 +376,7 @@ async function fetchEventDesc(event_id, secondAttempt=false) {
         }) .then (async (response) => { 
             responseData = response.data;
             let eventTags = [];
+            eventTags.push(responseData["event_type"]);
             for (let i=0; i< responseData['event_tags'].length; i++) {
                 eventTags.push(responseData['event_tags'][i]['name']);
             }
