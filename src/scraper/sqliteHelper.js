@@ -168,6 +168,7 @@ function addPrefix(obj) {
 }
 
 function retrieveEvent(tags, clubName) {
+    console.log(`Retrieving events...\nTags: ${tags}\nClub  Name: ${clubName}`)
     return db.all(`SELECT * from events WHERE end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ($cname = '' OR clubName=$cname COLLATE NOCASE) ORDER BY start_time`,
         {
             $tag:tags,
