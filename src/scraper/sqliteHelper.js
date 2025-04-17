@@ -179,11 +179,12 @@ function retrieveEvent(tags, clubName) {
 function retrieveTagEvents(tags, clubName, days, channelID) {
     let dateToLookFor = DateTime.now().plus({ days: days}).toISO();
     clubName = clubName.split(",");
-    clubName = clubName.map(c => c.trim().replace(/[^a-zA-Z -]/gm, ''));
+    clubName = clubName.map(c => c.trim().replace(/[^a-zA-Z -]/gm, '')).trim();
 
     let queryString = "";
 
     if(clubName.length != 0) {
+        console.log(clubName.length)
         queryString = "'" + clubName.join("','") + "'";;
     }
 
