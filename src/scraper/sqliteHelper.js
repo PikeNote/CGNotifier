@@ -187,6 +187,8 @@ function retrieveTagEvents(tags, clubName, days, channelID) {
         queryString = "'" + clubName.join("','") + "'";;
     }
 
+    console.log(`Retrieving events...\nTags: ${tags}\nClub  Name: ${clubName}\nDays: ${dateToLookFor}`)
+
     return db.all(`SELECT * from events t1 WHERE NOT exists (SELECT 1 FROM messages t2 WHERE t1.eventId = t2.eventId AND $channelID = t2.channelID) AND end_time > strftime('%Y-%m-%dT%H:%M:%S', 'now', 'utc') AND ($tag = '' OR EXISTS (SELECT * FROM json_each(eventCategory) WHERE value IN ($tag) COLLATE NOCASE)) AND ("${queryString}" = "" OR clubName IN (${queryString}) COLLATE NOCASE) AND $days > end_time ORDER BY start_time`,
         {
             $tag:tags,
